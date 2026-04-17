@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Bucket",
+    "slug": "travel-bucket-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "bucket",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bucket.app"
+    },
+    "android": {
+      "package": "com.bucket.app"
+    },
+    "plugins": ["expo-router", "expo-font"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
