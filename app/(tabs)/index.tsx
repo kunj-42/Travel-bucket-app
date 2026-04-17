@@ -32,7 +32,7 @@ export default function Feed() {
             <EmptyState
               eyebrow="Empty bucket"
               title="A quiet shelf, for now."
-              body="Paste the first link you've been saving in your notes app. A reel, a listing, a restaurant. It all lives here."
+              body="Add the first place you've been meaning to save. Pick a city, type the name — we handle the rest."
             >
               <Button label="Add your first place" onPress={() => router.push('/add')} />
             </EmptyState>

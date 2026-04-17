@@ -23,6 +23,8 @@ export interface Place {
   coordinates?: Coordinates;
   sourceUrl?: string;
   thumbnailUrl?: string;
+  address?: string;
+  googlePlaceId?: string;
   notes?: string;
   tags: string[];
   createdAt: number;
@@ -30,6 +32,12 @@ export interface Place {
   // Reserved for future shared-bucket support. V1 places all sit in the
   // default personal bucket.
   bucketIds: string[];
+}
+
+export interface PickedCity {
+  name: string;
+  country: string;
+  coordinates?: Coordinates;
 }
 
 export interface Bucket {

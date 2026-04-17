@@ -9,13 +9,13 @@ import { Button } from '@/components/Button';
 import { usePlaces } from '@/lib/store';
 
 export default function Settings() {
-  const { places, reset } = usePlaces();
+  const { places, pickedCities, reset } = usePlaces();
   const insets = useSafeAreaInsets();
 
   const onReset = () => {
     Alert.alert(
-      'Reset to sample shelf?',
-      'This replaces your current list with the eight sample places. Your own additions will be lost.',
+      'Start over?',
+      'This wipes your saved places and dream cities. You\'ll go back through onboarding.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Reset', style: 'destructive', onPress: () => reset() },
@@ -40,6 +40,8 @@ export default function Settings() {
 
       <Row label="Places saved" value={`${places.length}`} />
       <Divider style={{ marginHorizontal: spacing.xl }} />
+      <Row label="Dream cities" value={`${pickedCities.length}`} />
+      <Divider style={{ marginHorizontal: spacing.xl }} />
       <Row label="Storage" value="On device" />
       <Divider style={{ marginHorizontal: spacing.xl }} />
       <Row label="Bucket" value="Personal" />
@@ -54,7 +56,7 @@ export default function Settings() {
       </View>
 
       <View style={styles.section}>
-        <Button label="Reset sample shelf" variant="outline" onPress={onReset} />
+        <Button label="Start over" variant="outline" onPress={onReset} />
       </View>
 
       <View style={[styles.section, { alignItems: 'center' }]}>

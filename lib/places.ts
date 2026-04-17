@@ -1,5 +1,5 @@
-import { DEFAULT_BUCKET_ID, type Category, type Place } from './types';
-import { loadAll, saveAll } from './db';
+import { DEFAULT_BUCKET_ID, type Category, type Coordinates, type Place } from './types';
+import { loadPlaces, savePlaces } from './db';
 
 function uid(): string {
   return `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -10,25 +10,27 @@ export interface NewPlaceInput {
   category: Category;
   city: string;
   country: string;
-  coordinates?: { latitude: number; longitude: number };
+  coordinates?: Coordinates;
   sourceUrl?: string;
   thumbnailUrl?: string;
+  address?: string;
+  googlePlaceId?: string;
   notes?: string;
   tags?: string[];
 }
 
 export async function listPlaces(): Promise<Place[]> {
-  const all = await loadAll();
+  const all = await loadPlaces();
   return all.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function getPlace(id: string): Promise<Place | undefined> {
-  const all = await loadAll();
+  const all = await loadPlaces();
   return all.find((p) => p.id === id);
 }
 
 export async function createPlace(input: NewPlaceInput): Promise<Place> {
-  const all = await loadAll();
+  const all = await loadPlaces();
   const now = Date.now();
   const place: Place = {
     id: uid(),
@@ -39,18 +41,20 @@ export async function createPlace(input: NewPlaceInput): Promise<Place> {
     coordinates: input.coordinates,
     sourceUrl: input.sourceUrl?.trim() || undefined,
     thumbnailUrl: input.thumbnailUrl?.trim() || undefined,
+    address: input.address?.trim() || undefined,
+    googlePlaceId: input.googlePlaceId,
     notes: input.notes?.trim() || undefined,
     tags: (input.tags ?? []).map((t) => t.trim()).filter(Boolean),
     createdAt: now,
     updatedAt: now,
     bucketIds: [DEFAULT_BUCKET_ID],
   };
-  await saveAll([place, ...all]);
+  await savePlaces([place, ...all]);
   return place;
 }
 
 export async function updatePlace(id: string, patch: Partial<NewPlaceInput>): Promise<Place | undefined> {
-  const all = await loadAll();
+  const all = await loadPlaces();
   const idx = all.findIndex((p) => p.id === id);
   if (idx < 0) return undefined;
   const prev = all[idx];
@@ -62,13 +66,13 @@ export async function updatePlace(id: string, patch: Partial<NewPlaceInput>): Pr
   };
   const copy = all.slice();
   copy[idx] = next;
-  await saveAll(copy);
+  await savePlaces(copy);
   return next;
 }
 
 export async function deletePlace(id: string): Promise<void> {
-  const all = await loadAll();
-  await saveAll(all.filter((p) => p.id !== id));
+  const all = await loadPlaces();
+  await savePlaces(all.filter((p) => p.id !== id));
 }
 
 export function collectCities(places: Place[]): string[] {

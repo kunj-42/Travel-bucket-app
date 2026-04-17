@@ -1,80 +1,51 @@
-import React, { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { type } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { usePlaces } from '@/lib/store';
-import { PlaceImage } from '@/components/PlaceImage';
-import { CategoryLabel } from '@/components/CategoryLabel';
-import { Divider } from '@/components/Divider';
-import { EmptyState } from '@/components/EmptyState';
-import { describeReason, suggestPlaces, type Suggestion } from '@/lib/suggestions';
 
 export default function Suggestions() {
-  const { places } = usePlaces();
+  const { pickedCities } = usePlaces();
   const insets = useSafeAreaInsets();
-  const suggestions = useMemo(() => suggestPlaces(places, 12), [places]);
 
   return (
-    <View style={styles.wrap}>
-      <FlatList
-        data={suggestions}
-        keyExtractor={(s) => s.place.id}
-        ListHeaderComponent={
-          <View style={[styles.header, { paddingTop: insets.top + spacing.xl }]}>
-            <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>For you</Text>
-            <Text style={type.display}>In the margins{'\n'}of your list.</Text>
-            <Text style={[type.body, styles.subtitle]}>
-              Drawn from the cities, categories and tags you already save. Think of it as a well-read
-              friend with a pen in hand.
-            </Text>
-            <View style={styles.rule} />
-          </View>
-        }
-        ListEmptyComponent={
-          <EmptyState
-            eyebrow="Nothing yet"
-            title="Suggestions arrive once the shelf has a few books."
-            body="Save three or four places and this page will start to feel like someone who knows your taste."
-          />
-        }
-        renderItem={({ item }) => <SuggestionRow suggestion={item} />}
-        ItemSeparatorComponent={() => <Divider style={{ marginHorizontal: spacing.xl }} />}
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
-        showsVerticalScrollIndicator={false}
-      />
-    </View>
-  );
-}
-
-function SuggestionRow({ suggestion }: { suggestion: Suggestion }) {
-  const { place, reason } = suggestion;
-  const reasonText = describeReason(reason);
-  return (
-    <Pressable
-      onPress={() => router.push(`/place/${place.id}`)}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.9 }]}
+    <ScrollView
+      style={styles.wrap}
+      contentContainerStyle={{
+        paddingTop: insets.top + spacing.xl,
+        paddingBottom: insets.bottom + spacing.xxl,
+      }}
+      showsVerticalScrollIndicator={false}
     >
-      <View style={styles.image}>
-        <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={1} />
+      <View style={styles.header}>
+        <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>For you</Text>
+        <Text style={type.display}>In the margins{'\n'}of your list.</Text>
+        <Text style={[type.body, styles.subtitle]}>
+          Soon, places pulled from the cities you've dreamt of and the ones you've already saved. A
+          small, well-read friend with a pen in hand.
+        </Text>
+        <View style={styles.rule} />
       </View>
-      <View style={styles.body}>
-        <CategoryLabel category={place.category} muted />
-        <Text style={[type.subtitle, styles.title]} numberOfLines={2}>
-          {place.title}
+
+      <View style={styles.block}>
+        <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Coming soon</Text>
+        <Text style={[type.body, { fontSize: 16, lineHeight: 26, color: colors.text }]}>
+          The suggestions engine will read your saved list and surface new places nearby — in the
+          same cities, the same mood, the same quiet corners. Until then, keep adding.
         </Text>
-        <Text style={type.meta} numberOfLines={1}>
-          {place.city} · {place.country}
-        </Text>
-        {reasonText ? (
-          <Text style={[type.meta, styles.reason]} numberOfLines={2}>
-            {reasonText}
+      </View>
+
+      {pickedCities.length > 0 ? (
+        <View style={styles.block}>
+          <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Your dream cities</Text>
+          <Text style={type.body}>
+            {pickedCities.map((c) => c.name).join(' · ')}
           </Text>
-        ) : null}
-      </View>
-    </Pressable>
+        </View>
+      ) : null}
+    </ScrollView>
   );
 }
 
@@ -94,26 +65,8 @@ const styles = StyleSheet.create({
     width: 36,
     marginTop: spacing.xxl,
   },
-  row: {
-    flexDirection: 'row',
+  block: {
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-    gap: spacing.lg,
-  },
-  image: {
-    width: 110,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  title: {
-    marginTop: spacing.xs,
-  },
-  reason: {
-    marginTop: spacing.sm,
-    fontStyle: 'italic',
-    color: colors.accent,
+    paddingTop: spacing.xxl,
   },
 });

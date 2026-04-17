@@ -10,7 +10,6 @@ import { Divider } from '@/components/Divider';
 import { Button } from '@/components/Button';
 import { usePlaces } from '@/lib/store';
 import { getPlace } from '@/lib/places';
-import { CANDIDATE_PLACES } from '@/lib/seed';
 import { openInMaps, openUrl } from '@/lib/maps';
 import type { Place } from '@/lib/types';
 
@@ -19,7 +18,7 @@ export default function PlaceDetail() {
   const { places, remove } = usePlaces();
   const insets = useSafeAreaInsets();
   const [place, setPlace] = useState<Place | undefined>(() =>
-    places.find((p) => p.id === id) ?? CANDIDATE_PLACES.find((p) => p.id === id),
+    places.find((p) => p.id === id),
   );
 
   useEffect(() => {
@@ -27,7 +26,7 @@ export default function PlaceDetail() {
     if (!place && id) {
       (async () => {
         const found = await getPlace(id);
-        if (live) setPlace(found ?? CANDIDATE_PLACES.find((p) => p.id === id));
+        if (live) setPlace(found);
       })();
     }
     return () => {
@@ -64,8 +63,6 @@ export default function PlaceDetail() {
       },
     ]);
   };
-
-  const inBucket = places.some((p) => p.id === place.id);
 
   return (
     <ScrollView
@@ -125,19 +122,11 @@ export default function PlaceDetail() {
         </View>
       ) : null}
 
-      {inBucket ? (
-        <View style={[styles.section, { paddingTop: spacing.xxl }]}>
-          <Pressable onPress={onDelete}>
-            <Text style={styles.delete}>Remove from bucket</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={[styles.section, { paddingTop: spacing.xxl }]}>
-          <Text style={[type.meta, { fontStyle: 'italic' }]}>
-            A suggestion — not yet in your bucket.
-          </Text>
-        </View>
-      )}
+      <View style={[styles.section, { paddingTop: spacing.xxl }]}>
+        <Pressable onPress={onDelete}>
+          <Text style={styles.delete}>Remove from bucket</Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
