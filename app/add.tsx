@@ -204,6 +204,7 @@ export default function AddPlace() {
 
   const pickCity = (c: PickedCity) => {
     setCity(c);
+    if (prefill?.title && !placeQuery) setPlaceQuery(prefill.title);
     setStep('place');
   };
 
@@ -226,26 +227,31 @@ export default function AddPlace() {
       const { city: c, country } = cityFromAddress(d.address);
       setSelected({
         title: d.name || p.primary,
-        category: categoryFromTypes(d.types),
+        category: prefill?.suggestedCategory ?? categoryFromTypes(d.types),
         city: city?.name ?? c,
         country: city?.country ?? country,
         address: d.address,
         coordinates: d.coordinates,
-        thumbnailUrl: d.photoName ? photoUrl(d.photoName, 1600) : undefined,
+        thumbnailUrl: d.photoName
+          ? photoUrl(d.photoName, 1600)
+          : prefill?.thumbnailUrl,
         googlePlaceId: d.placeId,
       });
+      if (prefill?.sourceUrl) setSourceUrl(prefill.sourceUrl);
       setStep('details');
     },
-    [city],
+    [city, prefill],
   );
 
   const manualEntry = () => {
     setSelected({
-      title: placeQuery.trim() || 'Untitled',
-      category: 'See',
+      title: prefill?.title || placeQuery.trim() || 'Untitled',
+      category: prefill?.suggestedCategory ?? 'See',
       city: city?.name ?? '',
       country: city?.country ?? '',
+      thumbnailUrl: prefill?.thumbnailUrl,
     });
+    if (prefill?.sourceUrl) setSourceUrl(prefill.sourceUrl);
     setStep('details');
   };
 
@@ -262,13 +268,14 @@ export default function AddPlace() {
         coordinates: selected.coordinates,
         thumbnailUrl: selected.thumbnailUrl,
         googlePlaceId: selected.googlePlaceId,
-        sourceUrl: sourceUrl.trim() || undefined,
+        sourceUrl: (sourceUrl.trim() || prefill?.sourceUrl) || undefined,
         notes: notes.trim() || undefined,
         tags: tagsRaw
           .split(',')
           .map((t) => t.trim().toLowerCase())
           .filter(Boolean),
       });
+      setPrefill(null);
       router.back();
     } finally {
       setSaving(false);
@@ -363,6 +370,8 @@ export default function AddPlace() {
           onPick={pickPrediction}
           onManualEntry={manualEntry}
           apiAvailable={apiAvailable}
+          prefillThumb={prefill?.thumbnailUrl}
+          prefillTitle={prefill?.title}
         />
       ) : null}
 
@@ -662,6 +671,8 @@ function PlaceStep({
   onPick,
   onManualEntry,
   apiAvailable,
+  prefillThumb,
+  prefillTitle,
 }: {
   city: PickedCity | null;
   query: string;
@@ -671,6 +682,8 @@ function PlaceStep({
   onPick: (p: AutocompletePrediction) => void;
   onManualEntry: () => void;
   apiAvailable: boolean;
+  prefillThumb?: string;
+  prefillTitle?: string;
 }) {
   return (
     <ScrollView
@@ -702,6 +715,25 @@ function PlaceStep({
           <ActivityIndicator style={{ marginTop: spacing.md }} color={colors.textMuted} />
         ) : null}
       </View>
+
+      {prefillTitle || prefillThumb ? (
+        <View style={styles.prefillBanner}>
+          {prefillThumb ? (
+            <Image source={{ uri: prefillThumb }} style={styles.prefillBannerThumb} />
+          ) : null}
+          <View style={{ flex: 1 }}>
+            <Text style={[type.labelSoft, { marginBottom: spacing.xs }]}>From the link</Text>
+            {prefillTitle ? (
+              <Text style={type.body} numberOfLines={2}>
+                {prefillTitle}
+              </Text>
+            ) : null}
+            <Pressable onPress={onManualEntry} style={{ marginTop: spacing.md }}>
+              <Text style={[type.label, { color: colors.accent }]}>Save as-is</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {!apiAvailable ? (
         <View style={{ paddingHorizontal: spacing.xl }}>
@@ -855,6 +887,22 @@ const styles = StyleSheet.create({
   prefillThumb: {
     width: 64,
     height: 64,
+    backgroundColor: colors.hairline,
+  },
+  prefillBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginHorizontal: spacing.xl,
+    marginVertical: spacing.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.text,
+    backgroundColor: colors.surface,
+  },
+  prefillBannerThumb: {
+    width: 72,
+    height: 72,
     backgroundColor: colors.hairline,
   },
   hero: {
