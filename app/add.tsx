@@ -63,6 +63,22 @@ export default function AddPlace() {
   const [addCityQuery, setAddCityQuery] = useState('');
   const [addCityHits, setAddCityHits] = useState<PickedCity[]>([]);
   const [addingCity, setAddingCity] = useState(false);
+
+  // Paste-link flow state. `prefill` captures whatever a paste succeeded in
+  // scraping; it seeds the title/photo/source URL through the rest of the
+  // flow even when the user still needs to pick a city.
+  const [pastingLink, setPastingLink] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkProcessing, setLinkProcessing] = useState(false);
+  const [linkNote, setLinkNote] = useState<string | null>(null);
+  const [prefill, setPrefill] = useState<{
+    title?: string;
+    thumbnailUrl?: string;
+    sourceUrl?: string;
+    domain?: LinkDomain;
+    suggestedCategory?: Category;
+  } | null>(null);
+
   const seq = useRef(0);
   const citySeq = useRef(0);
 
