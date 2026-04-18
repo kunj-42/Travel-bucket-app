@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ehun vs Shantanu — Cat Chase</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #16162a;
+    color: #f0f0f5;
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    user-select: none;
+    padding: 12px;
+  }
+  #wrap {
+    position: relative;
+    width: 960px;
+    max-width: 100%;
+  }
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, #2a2a44, #1e1e33);
+    border: 3px solid #444;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    padding: 5px 12px;
+    border-radius: 14px;
+    background: #333350;
+    font-size: 13px;
+    display: inline-block;
+  }
+  .pill.score { font-weight: bold; font-size: 14px; }
+  .pill.ehun     { background: #5a3a20; color: #ffd7a8; }
+  .pill.shantanu { background: #64503c; color: #fff0d8; }
+  .pill.warn     { background: #b04050; color: #fff; }
+  .pill.ready    { background: #2e7a4a; color: #d0ffe0; }
+  canvas {
+    display: block;
+    background: #14141e;
+    border: 3px solid #444;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+  }
+  #overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #overlay.show { pointer-events: auto; background: rgba(8,8,18,0.55); }
+  .panel {
+    background: rgba(22, 22, 42, 0.97);
+    border: 3px solid #7a7a9a;
+    border-radius: 12px;
+    padding: 28px 36px;
+    text-align: center;
+    max-width: 580px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  }
+  .panel.hidden { display: none; }
+  .panel h1 { font-size: 30px; margin-bottom: 8px; color: #ffd966; }
+  .panel h2 { font-size: 20px; margin: 12px 0; color: #f0f0f5; }
+  .panel p  { margin: 10px 0; color: #aeb0c8; line-height: 1.5; font-size: 14px; }
+  .choose { display: flex; gap: 16px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .choose button {
+    background: #2f2f4a;
+    border: 2px solid #555;
+    color: #f0f0f5;
+    padding: 16px 20px;
+    font-size: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    min-width: 190px;
+  }
+  .choose button:hover { border-color: #ffd966; transform: translateY(-2px); }
+  .choose button.pick-ehun:hover     { background: #5a3a20; }
+  .choose button.pick-shantanu:hover { background: #64503c; }
+  .choose button .name { font-weight: bold; font-size: 17px; display: block; }
+  .choose button .desc { font-size: 12px; color: #aeb0c8; margin-top: 6px; }
+  .choose button .avatar { width: 70px; height: 70px; margin: 0 auto 6px; display: block; }
+  button.primary {
+    background: #ffd966;
+    color: #222;
+    border: none;
+    padding: 12px 28px;
+    font-size: 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 14px;
+  }
+  button.primary:hover { background: #ffc940; transform: translateY(-2px); }
+  button.ghost {
+    background: transparent; color: #aeb0c8; border: 2px solid #555;
+    padding: 10px 20px; font-size: 14px; border-radius: 8px;
+    cursor: pointer; margin: 4px;
+  }
+  button.ghost:hover { color: #fff; border-color: #ffd966; }
+  .controls { font-size: 12px; color: #8a8ca8; margin-top: 14px; }
+  .kbd {
+    display: inline-block;
+    background: #444466;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    margin: 0 2px;
+    border-bottom: 2px solid #2a2a44;
+  }
+  .sub { font-size: 13px; color: #8a8ca8; margin-top: 8px; }
+  .bigscore { font-size: 38px; font-weight: bold; margin: 14px 0; }
+  .bigscore .vs { color: #8a8ca8; margin: 0 14px; font-weight: normal; font-size: 24px; }
+  .bigscore .ehun { color: #d9a066; }
+  .bigscore .shantanu { color: #f0d8a8; }
+  #fab-reset {
+    position: absolute; top: 50px; right: 14px;
+    background: #333350ee; border: 1px solid #555; color: #eee;
+    padding: 4px 10px; border-radius: 6px; font-size: 11px;
+    cursor: pointer; z-index: 20;
+  }
+  #fab-reset:hover { background: #555577; }
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="hud">
+    <div>
+      <span class="pill score ehun" id="score-ehun">Ehun: 0</span>
+      <span class="pill score shantanu" id="score-shantanu">Shantanu: 0</span>
+    </div>
+    <div class="pill" id="round-info">Round 1</div>
+    <div class="pill" id="timer">15.0s</div>
+    <div class="pill ready" id="cooldown">Pounce: READY</div>
+  </div>
+  <canvas id="game" width="960" height="640"></canvas>
+  <button id="fab-reset" title="Reset match">Reset</button>
+  <button id="fab-log" title="Copy diagnostic log (paste to Claude)"
+          style="position:absolute; top:50px; right:70px; background:#333350ee;
+                 border:1px solid #555; color:#eee; padding:4px 10px;
+                 border-radius:6px; font-size:11px; cursor:pointer; z-index:20;">📋 Copy Log</button>
+
+  <div id="overlay" class="show">
+    <!-- START PANEL -->
+    <div class="panel" id="start-panel">
+      <h1>🐈 Ehun vs Shantanu</h1>
+      <p>A cat chase through the house. Best of 5 rounds — first to <b>3</b> wins.<br>
+      Roles flip every round, so you'll chase some and flee others.</p>
+      <div class="choose">
+        <button class="pick-ehun" data-cat="ehun">
+          <canvas class="avatar" id="avatar-ehun" width="70" height="70"></canvas>
+          <span class="name">Ehun</span>
+          <div class="desc">3kg · tabby + white<br>smart &amp; precise</div>
+        </button>
+        <button class="pick-shantanu" data-cat="shantanu">
+          <canvas class="avatar" id="avatar-shantanu" width="70" height="70"></canvas>
+          <span class="name">Shantanu</span>
+          <div class="desc">5kg · ginger + white<br>chonky &amp; surprisingly fast</div>
+        </button>
+      </div>
+      <div class="controls">
+        <span class="kbd">WASD</span> or <span class="kbd">↑↓←→</span> move ·
+        <span class="kbd">Space</span> pounce (auto-aims) ·
+        <span class="kbd">P</span> pause ·
+        <span class="kbd">R</span> reset ·
+        <span class="kbd">M</span> mute
+      </div>
+    </div>
+
+    <!-- ROUND INTRO -->
+    <div class="panel hidden" id="round-panel">
+      <h1 id="round-title">Round 1</h1>
+      <h2 id="role-line">You are the CHASER</h2>
+      <p id="round-goal">Catch the other cat within 15 seconds!</p>
+      <div class="sub" id="countdown-text">Starting in 3…</div>
+    </div>
+
+    <!-- ROUND OVER -->
+    <div class="panel hidden" id="roundover-panel">
+      <h1 id="roundover-title">Caught!</h1>
+      <h2 id="roundover-score">Ehun 1 · Shantanu 0</h2>
+      <p id="roundover-sub">Next round starting…</p>
+    </div>
+
+    <!-- GAME OVER -->
+    <div class="panel hidden" id="gameover-panel">
+      <h1 id="gameover-title">🏆 Ehun wins the match!</h1>
+      <div class="bigscore">
+        <span class="ehun" id="go-ehun">3</span>
+        <span class="vs">vs</span>
+        <span class="shantanu" id="go-shantanu">1</span>
+      </div>
+      <button class="primary" id="play-again">Play Again</button>
+    </div>
+
+    <!-- PAUSE -->
+    <div class="panel hidden" id="pause-panel">
+      <h1>⏸ Paused</h1>
+      <p>Press <span class="kbd">P</span> to resume.</p>
+      <button class="ghost" id="pause-reset">Reset Match</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+ * CONSTANTS — tweak these to change game feel
+ * ============================================================ */
+const W = 960, H = 640;                 // canvas size
+// Fine 10-px grid so cat bodies (~12-16 px) fit with margin in every cell.
+// The previous 20-px grid was almost the same size as the cat, so "walkable"
+// cells near walls were only technically safe — any drift clipped the wall
+// and collision made the cat bonk/stall.
+const CELL = 10;
+const GCOLS = Math.floor(W / CELL);     // 96
+const GROWS = Math.floor(H / CELL);     // 64
+// Inflate blockers OUTWARD by this much when building the pathfinding grid.
+// MUST be >= max cat hitbox half-width (Shantanu = size*0.30 = 8.1), otherwise
+// "walkable" cells near walls don't actually have enough clearance for the
+// cat body and it clips/bumps the wall. 10 gives a comfortable margin.
+const GRID_INFLATE = 10;
+
+const ROUND_TIME = 15000;               // ms per round (shorter = runner favoured)
+const ROUNDS_TO_WIN = 3;                // best-of-5 → first to 3
+const MAX_ROUNDS = 5;
+const CATCH_RADIUS = 22;                // distance at which chaser catches runner
+const POUNCE_COOLDOWN = 4500;           // ms — longer so chaser can't spam-pounce
+const POUNCE_DURATION = 300;            // ms — tightened so pounce closes ~80px gap
+const COUNTDOWN_MS = 2200;              // pre-round countdown
+
+/* AI difficulty knobs. */
+const AI = {
+  baseReplanMs: 110,
+  chaser: {
+    jitter: 0.20,
+    pounceChance: 0.05,
+    pounceRange: 170,
+    unstickAfterMs: 350,
+  },
+  runner: {
+    jitter: 0.30,
+    pounceChance: 0.025,
+    pounceRange: 95,
+    unstickAfterMs: 350,
+  },
+};
+
+/* Cat stats — Ehun is smart & precise; Shantanu is a fast chonk. */
+const CAT_STATS = {
+  ehun: {
+    displayName: 'Ehun',
+    size: 20,
+    speed: 2.40,
+    pounceMult: 4.0,
+    ai: {
+      jitterMul:  0.40,
+      pounceMul:  1.55,
+      replanMul:  0.85,
+      unstickMul: 0.90,
+      losChaseBias: 0,
+    },
+    colors: {
+      body:   '#a48760',
+      head:   '#a48760',
+      belly:  '#f1e4cc',
+      stripes:'#4d3418',
+      earIn:  '#ffb6c1',
+      eye:    '#6fa050',
+      nose:   '#d06878',
+    },
+  },
+  shantanu: {
+    displayName: 'Shantanu',
+    size: 27,
+    speed: 2.475,
+    pounceMult: 4.2,
+    ai: {
+      jitterMul:  0.70,
+      pounceMul:  0.90,
+      replanMul:  1.00,
+      unstickMul: 0.90,
+      losChaseBias: 0,
+    },
+    colors: {
+      body:   '#f5f0e6',
+      head:   '#d48755',
+      belly:  '#fbfaf5',
+      stripes:null,
+      earIn:  '#ffc4a8',
+      eye:    '#c08630',
+      nose:   '#e8a080',
+    },
+  },
+};
+
+/* --- FOOD / SPEED-BOOST -----------------------------------------------
+ * Once per round, at a RANDOMIZED moment, a golden fish appears at a
+ * random walkable cell. First cat to reach it gets 3× speed for 3s.
+ * Boost multiplies baseSpeed; does NOT stack with pounce (pounce is
+ * already a burst). Chaser role-penalty still applies during boost.
+ */
+const FOOD = {
+  pickupRadius:    18,     // px
+  spawnMinMs:    2000,     // earliest spawn after round start
+  spawnMaxMs:   12000,     // latest; leaves ≥3s before 15s round end
+  boostMs:       3000,     // boost duration
+  boostMult:      3.0,
+  minDistFromCats: 120,    // don't spawn in someone's lap
+};
+
+/* ============================================================
+ * MAP — house layout
+ * ============================================================ */
+const T = 10;  // wall thickness
+
+const walls = [
+  // Outer border
+  {x:0,    y:0,    w:W,   h:T},
+  {x:0,    y:H-T,  w:W,   h:T},
+  {x:0,    y:0,    w:T,   h:H},
+  {x:W-T,  y:0,    w:T,   h:H},
+
+  // Horizontal wall at y=220
+  {x:T,    y:220,  w:120, h:T},
+  {x:180,  y:220,  w:360, h:T},
+
+  // Vertical wall at x=290: KITCHEN | DINING
+  {x:290,  y:T,    w:T,   h:60},
+  {x:290,  y:140,  w:T,   h:80},
+
+  // Vertical wall at x=540: DINING | HALLWAY
+  {x:540,  y:T,    w:T,   h:80},
+  {x:540,  y:160,  w:T,   h:60},
+
+  // Vertical wall at x=620: HALLWAY | MASTER BEDROOM
+  {x:620,  y:T,    w:T,   h:120},
+  {x:620,  y:200,  w:T,   h:100},
+
+  // Horizontal wall at y=300: MASTER BEDROOM | BEDROOM 2
+  {x:620,  y:300,  w:200, h:T},
+
+  // Vertical wall at x=620: HALL/LIVING | BEDROOM 2
+  {x:620,  y:300,  w:T,   h:80},
+  {x:620,  y:440,  w:T,   h:190},
+
+  // Vertical wall at x=820: BEDROOM 2 | BALCONY
+  {x:820,  y:300,  w:T,   h:130},
+  {x:820,  y:490,  w:T,   h:140},
+
+  // TOILET
+  {x:T,    y:490,  w:80,  h:T},
+  {x:140,  y:490,  w:30,  h:T},
+  {x:170,  y:490,  w:T,   h:140},
+];
+
+const furniture = [
+  // Kitchen
+  {x:20,  y:20,  w:100, h:28, type:'counter'},
+  {x:20,  y:55,  w:36,  h:52, type:'fridge'},
+  {x:140, y:20,  w:50,  h:28, type:'stove'},
+  {x:200, y:20,  w:80,  h:28, type:'counter'},
+  {x:80,  y:180, w:30,  h:22, type:'bowl'},
+
+  // Dining
+  {x:355, y:60,  w:130, h:90, type:'table'},
+
+  // Master Bedroom
+  {x:700, y:30,  w:170, h:110, type:'bed'},
+  {x:670, y:35,  w:22,  h:28,  type:'nightstand'},
+  {x:875, y:35,  w:22,  h:28,  type:'nightstand'},
+  {x:855, y:240, w:80,  h:30,  type:'dresser'},
+
+  // Living Room
+  {x:40,  y:250, w:160, h:44, type:'couch'},
+  {x:250, y:290, w:100, h:60, type:'rug-table'},
+  {x:440, y:260, w:60,  h:60, type:'armchair'},
+  {x:40,  y:370, w:70,  h:26, type:'tvstand'},
+  {x:440, y:410, w:30,  h:22, type:'bowl'},
+  {x:270, y:440, w:110, h:32, type:'couch'},
+
+  // Bedroom 2
+  {x:680, y:340, w:100, h:100, type:'bed'},
+  {x:700, y:560, w:100, h:28,  type:'dresser'},
+
+  // Balcony
+  {x:850, y:330, w:40,  h:40,  type:'plant'},
+  {x:870, y:440, w:40,  h:40,  type:'plant'},
+  {x:840, y:560, w:50,  h:50,  type:'plant'},
+];
+
+const roomLabels = [
+  {x:150, y:115, text:'KITCHEN'},
+  {x:415, y:115, text:'DINING'},
+  {x:580, y:115, text:'HALL'},
+  {x:785, y:155, text:'MASTER BEDROOM'},
+  {x:315, y:360, text:'LIVING ROOM'},
+  {x:720, y:490, text:'BEDROOM'},
+  {x:885, y:465, text:'BALCONY'},
+  {x:90,  y:560, text:'TOILET'},
+];
+
+const SPAWN_PAIRS = [
+  [{x:120, y:150},  {x:900, y:200}],
+  [{x:880, y:540},  {x:300, y:560}],
+  [{x:660, y:200},  {x:90,  y:560}],
+  [{x:420, y:360},  {x:510, y:180}],
+  [{x:700, y:520},  {x:250, y:150}],
+];
+
+const inToilet = (x, y) => x < 170 && y > 490;
+
+function randomSpawnPair() {
+  const MIN_DIST = 500;
+  const TRIES = 200;
+  for (let t = 0; t < TRIES; t++) {
+    const c1x = Math.floor(Math.random() * GCOLS);
+    const c1y = Math.floor(Math.random() * GROWS);
+    const c2x = Math.floor(Math.random() * GCOLS);
+    const c2y = Math.floor(Math.random() * GROWS);
+    if (grid[c1y][c1x] || grid[c2y][c2x]) continue;
+    const x1 = c1x*CELL + CELL/2, y1 = c1y*CELL + CELL/2;
+    const x2 = c2x*CELL + CELL/2, y2 = c2y*CELL + CELL/2;
+    if (inToilet(x1, y1) || inToilet(x2, y2)) continue;
+    if (Math.hypot(x1-x2, y1-y2) < MIN_DIST) continue;
+    return [{x:x1, y:y1}, {x:x2, y:y2}];
+  }
+  return SPAWN_PAIRS[Math.floor(Math.random() * SPAWN_PAIRS.length)];
+}
+
+/** Pick a random walkable cell for food. Avoids toilet, avoids spawning
+ *  right next to either cat, falls back to any walkable cell. */
+function pickFoodSpot(playerCat, aiCat) {
+  for (let t = 0; t < 80; t++) {
+    const cx = Math.floor(Math.random() * GCOLS);
+    const cy = Math.floor(Math.random() * GROWS);
+    if (grid[cy][cx]) continue;
+    const x = cx*CELL + CELL/2, y = cy*CELL + CELL/2;
+    if (inToilet(x, y)) continue;
+    if (Math.hypot(x - playerCat.x, y - playerCat.y) < FOOD.minDistFromCats) continue;
+    if (Math.hypot(x - aiCat.x,     y - aiCat.y)     < FOOD.minDistFromCats) continue;
+    return { x, y };
+  }
+  for (let cy = 0; cy < GROWS; cy++)
+    for (let cx = 0; cx < GCOLS; cx++)
+      if (!grid[cy][cx]) return { x: cx*CELL + CELL/2, y: cy*CELL + CELL/2 };
+  return { x: W/2, y: H/2 };
+}
+
+/* ============================================================
+ * GEOMETRY & PATHFINDING GRID
+ * ============================================================ */
+function rectOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < b.y + b.h && a.y + a.h > b.y;
+}
+function rectInflate(r, n) { return {x:r.x-n, y:r.y-n, w:r.w+2*n, h:r.h+2*n}; }
+
+const blockers = walls.concat(furniture);
+
+function buildGrid() {
+  const g = [];
+  for (let r = 0; r < GROWS; r++) {
+    const row = [];
+    for (let c = 0; c < GCOLS; c++) {
+      const cell = {
+        x: c*CELL - GRID_INFLATE,
+        y: r*CELL - GRID_INFLATE,
+        w: CELL + 2*GRID_INFLATE,
+        h: CELL + 2*GRID_INFLATE,
+      };
+      let blocked = false;
+      for (const w of blockers) { if (rectOverlap(cell, w)) { blocked = true; break; } }
+      row.push(blocked);
+    }
+    g.push(row);
+  }
+  return g;
+}
+const grid = buildGrid();
+
+function cellFree(cx, cy) {
+  return cx >= 0 && cy >= 0 && cx < GCOLS && cy < GROWS && !grid[cy][cx];
+}
+
+/** Build a 4-connected path from (sx,sy) toward the BFS source of `field`,
+ *  following strict-descent. */
+function buildChasePath(sx, sy, field) {
+  const path = [];
+  let cx = sx, cy = sy;
+  const MAX = 200;
+  for (let i = 0; i < MAX; i++) {
+    const cur = field[cy]?.[cx];
+    if (cur === undefined || cur === 0 || cur === Infinity) break;
+    let bestNx = -1, bestNy = -1, bestVal = cur;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const nx = cx+dx, ny = cy+dy;
+      if (!cellFree(nx, ny)) continue;
+      const v = field[ny][nx];
+      if (v === undefined || v === Infinity) continue;
+      if (v < bestVal) { bestVal = v; bestNx = nx; bestNy = ny; }
+    }
+    if (bestNx === -1) break;
+    cx = bestNx; cy = bestNy;
+    path.push({ cx, cy });
+  }
+  return path;
+}
+
+function bfsFrom(sx, sy) {
+  const dist = Array.from({length: GROWS}, () => new Array(GCOLS).fill(Infinity));
+  if (!cellFree(sx, sy)) {
+    let found = false;
+    for (let r = 1; r < 4 && !found; r++) {
+      for (let dy = -r; dy <= r && !found; dy++) {
+        for (let dx = -r; dx <= r && !found; dx++) {
+          if (cellFree(sx+dx, sy+dy)) { sx += dx; sy += dy; found = true; }
+        }
+      }
+    }
+    if (!found) return dist;
+  }
+  const queue = [[sx, sy]];
+  dist[sy][sx] = 0;
+  let head = 0;
+  while (head < queue.length) {
+    const [x, y] = queue[head++];
+    const d = dist[y][x];
+    const N = [[1,0],[-1,0],[0,1],[0,-1]];
+    for (const [dx, dy] of N) {
+      const nx = x+dx, ny = y+dy;
+      if (!cellFree(nx, ny)) continue;
+      if (dist[ny][nx] > d + 1) {
+        dist[ny][nx] = d + 1;
+        queue.push([nx, ny]);
+      }
+    }
+  }
+  return dist;
+}
+
+/* ============================================================
+ * CAT — physics, rendering, AI, input
+ * ============================================================ */
+class Cat {
+  constructor(kind) {
+    const s = CAT_STATS[kind];
+    this.kind = kind;
+    this.name = s.displayName;
+    this.colors = s.colors;
+    this.size = s.size;
+    this.baseSpeed = s.speed;
+    this.pounceMult = s.pounceMult;
+    this.x = 0; this.y = 0;
+    this.facing = 0;
+    this.moveX = 0; this.moveY = 0;
+    this.animTime = 0;
+    this.pounceUntil = 0;
+    this.pounceCooldownUntil = 0;
+    this.boostUntil = 0;     // ms; if performance.now() < this → 3× speed
+    this.role = 'runner';
+    this.isPlayer = false;
+    // AI state
+    this.aiTimer = 0;
+    this.distField = null;
+    this.waypoint = null;
+    this.waypointDir = null;
+    this.stuckTimer = 0;
+    this.stuckSide = 1;
+    this.lastX = 0; this.lastY = 0;
+    this.bumpedX = 0; this.bumpedY = 0;
+    this.bumpHeat = 0;
+  }
+
+  reset(pos) {
+    this.x = pos.x; this.y = pos.y;
+    this.facing = 0;
+    this.moveX = 0; this.moveY = 0;
+    this.pounceUntil = 0;
+    this.pounceCooldownUntil = 0;
+    this.boostUntil = 0;
+    this.stuckTimer = 0;
+    this.stuckSide = 1;
+    this.lastX = this.x; this.lastY = this.y;
+    this.distField = null;
+    this.waypoint = null;
+    this.waypointDir = null;
+    this.fleeTarget = null;
+    this.aiTimer = 0;
+    this.bumpedX = 0; this.bumpedY = 0;
+    this.bumpHeat = 0;
+  }
+
+  get radius() { return this.size * 0.5; }
+  get isPouncing() { return performance.now() < this.pounceUntil; }
+  get pounceReady() { return performance.now() >= this.pounceCooldownUntil; }
+
+  tryPounce() {
+    const now = performance.now();
+    if (now >= this.pounceCooldownUntil) {
+      this.pounceUntil = now + POUNCE_DURATION;
+      this.pounceCooldownUntil = now + POUNCE_COOLDOWN;
+      spawnPuff(this.x, this.y, 10, '#ffe9b0');
+      return true;
+    }
+    return false;
+  }
+
+  step(dx, dy, dt) {
+    this.bumpedX = 0; this.bumpedY = 0;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.001) return;
+    const nx = dx / len, ny = dy / len;
+    const dtScale = (dt || 16.67) / 16.67;
+    const pouncing = this.isPouncing;
+    const rolePenalty = (this.role === 'chaser' && !pouncing) ? 0.95 : 1.0;
+    // Boost doesn't stack with pounce (pounce is already a burst). Chaser
+    // penalty still applies, so boosted chaser runs at 3× × 0.95 = 2.85×.
+    const boosted = !pouncing && performance.now() < this.boostUntil;
+    const boostMult = boosted ? FOOD.boostMult : 1.0;
+    const speed = this.baseSpeed
+                  * (pouncing ? this.pounceMult : 1)
+                  * boostMult
+                  * dtScale
+                  * rolePenalty;
+    const vx = nx * speed;
+    const vy = ny * speed;
+
+    const targetAngle = Math.atan2(vy, vx);
+    let diff = targetAngle - this.facing;
+    while (diff > Math.PI) diff -= 2*Math.PI;
+    while (diff < -Math.PI) diff += 2*Math.PI;
+    this.facing += diff * 0.28;
+
+    this.moveX = nx; this.moveY = ny;
+
+    this.x += vx;
+    if (this.hitsBlocker()) { this.x -= vx; this.bumpedX = vx; }
+    this.y += vy;
+    if (this.hitsBlocker()) { this.y -= vy; this.bumpedY = vy; }
+  }
+
+  hitsBlocker() {
+    const hw = this.size * 0.30;
+    const box = {x:this.x - hw, y:this.y - hw, w:hw*2, h:hw*2};
+    for (const b of blockers) if (rectOverlap(box, b)) return true;
+    return false;
+  }
+
+  updateAI(opponent, dtMs) {
+    this.aiTimer += dtMs;
+    const cfg = AI[this.role];
+    const aiMul = CAT_STATS[this.kind].ai;
+    const replanMs = AI.baseReplanMs * aiMul.replanMul;
+
+    const myCx = Math.floor(this.x / CELL);
+    const myCy = Math.floor(this.y / CELL);
+    const oppCx = Math.floor(opponent.x / CELL);
+    const oppCy = Math.floor(opponent.y / CELL);
+
+    const PATH_REPLAN_CELLS = 10;
+    const MIN_REPLAN_MS = 450;
+    const CLOSE_RANGE_PX = 220;
+    const MIN_REPLAN_MS_CLOSE = 200;
+    const CLOSE_REPLAN_CELLS = 4;
+
+    let needReplan = this.aiTimer >= replanMs || !this.distField || !this.waypoint;
+    if (this.role === 'chaser') {
+      const nowMs = performance.now();
+      const timeSince = nowMs - (this._lastPathReplanAt || 0);
+      const pathDone = !this.path || !this.pathIdx ||
+                       this.pathIdx >= this.path.length - 1;
+      const euc = Math.hypot(opponent.x - this.x, opponent.y - this.y);
+      const closeRange = euc < CLOSE_RANGE_PX;
+      const shiftThreshold = closeRange ? CLOSE_REPLAN_CELLS : PATH_REPLAN_CELLS;
+      const minReplanMs = closeRange ? MIN_REPLAN_MS_CLOSE : MIN_REPLAN_MS;
+      const targetShifted = !this.plannedTarget ||
+        (Math.abs(oppCx - this.plannedTarget.cx) +
+         Math.abs(oppCy - this.plannedTarget.cy)) > shiftThreshold;
+      needReplan = pathDone || (targetShifted && timeSince >= minReplanMs);
+    }
+
+    if (needReplan) {
+      this.aiTimer = 0;
+
+      if (this.role === 'chaser') {
+        this.distField = bfsFrom(oppCx, oppCy);
+        this.path = buildChasePath(myCx, myCy, this.distField);
+        this.pathIdx = 0;
+        this.plannedTarget = { cx: oppCx, cy: oppCy };
+        this._lastPathReplanAt = performance.now();
+      } else {
+        const MIN_SAFE_EUC = 220;
+        const FLEE_COMMIT_MS = 1500;
+
+        const nowMs = performance.now();
+        let needNewTarget = !this.fleeTarget;
+        if (this.fleeTarget) {
+          const tgx = this.fleeTarget.cx * CELL + CELL/2;
+          const tgy = this.fleeTarget.cy * CELL + CELL/2;
+          const targetEuc = Math.hypot(tgx - opponent.x, tgy - opponent.y);
+          if (targetEuc < MIN_SAFE_EUC) needNewTarget = true;
+          if (this.fleeTarget.cx === myCx && this.fleeTarget.cy === myCy) needNewTarget = true;
+          if (nowMs - (this.fleeTargetPickedAt || 0) > FLEE_COMMIT_MS) needNewTarget = true;
+        }
+
+        if (needNewTarget) {
+          const chaserField = bfsFrom(oppCx, oppCy);
+          let maxEuc = 0;
+          const reachable = [];
+          for (let r = 0; r < GROWS; r++) {
+            for (let c = 0; c < GCOLS; c++) {
+              if (grid[r][c]) continue;
+              if (chaserField[r][c] === undefined || chaserField[r][c] === Infinity) continue;
+              if (c === myCx && r === myCy) continue;
+              const gx = c * CELL + CELL/2, gy = r * CELL + CELL/2;
+              if (gx < 170 && gy > 490) continue;
+              const euc = Math.hypot(gx - opponent.x, gy - opponent.y);
+              if (euc > maxEuc) maxEuc = euc;
+              const selfEuc = Math.hypot(gx - this.x, gy - this.y);
+              reachable.push({ cx: c, cy: r, euc, selfEuc });
+            }
+          }
+          const threshold = Math.max(MIN_SAFE_EUC, maxEuc * 0.75);
+          const MIN_TRAVEL = 300;
+          const aiRelX = this.x - opponent.x;
+          const aiRelY = this.y - opponent.y;
+          const candidates = reachable.filter(cell => {
+            if (cell.euc < threshold || cell.selfEuc < MIN_TRAVEL) return false;
+            const tgx = cell.cx * CELL + CELL/2;
+            const tgy = cell.cy * CELL + CELL/2;
+            const tRelX = tgx - opponent.x;
+            const tRelY = tgy - opponent.y;
+            return aiRelX * tRelX + aiRelY * tRelY > 0;
+          });
+          if (candidates.length) {
+            this.fleeTarget = candidates[Math.floor(Math.random() * candidates.length)];
+            this.fleeTargetPickedAt = nowMs;
+          } else if (reachable.length) {
+            reachable.sort((a, b) => b.euc - a.euc);
+            this.fleeTarget = reachable[0];
+            this.fleeTargetPickedAt = nowMs;
+          } else {
+            for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+              if (cellFree(myCx+dx, myCy+dy)) {
+                this.fleeTarget = { cx: myCx+dx, cy: myCy+dy }; break;
+              }
+            }
+          }
+        }
+        this.distField = bfsFrom(this.fleeTarget.cx, this.fleeTarget.cy);
+        // CHASER-AVOIDANCE OVERLAY
+        const CHASER_AVOID_R = 14;
+        const CHASER_AVOID_K = 4;
+        for (let r = 0; r < GROWS; r++) {
+          for (let c = 0; c < GCOLS; c++) {
+            const v = this.distField[r][c];
+            if (v === undefined || v === Infinity) continue;
+            const cd = Math.hypot(c - oppCx, r - oppCy);
+            if (cd < CHASER_AVOID_R) {
+              this.distField[r][c] = v + (CHASER_AVOID_R - cd) * CHASER_AVOID_K;
+            }
+          }
+        }
+      }
+      this.pickWaypoint();
+    }
+
+    if (this.waypoint) {
+      const wdx = this.waypoint.x - this.x;
+      const wdy = this.waypoint.y - this.y;
+      if (Math.hypot(wdx, wdy) < CELL * 0.55) this.pickWaypoint();
+    }
+
+    let tx = 0, ty = 0;
+    if (this.waypoint) {
+      tx = this.waypoint.x - this.x;
+      ty = this.waypoint.y - this.y;
+    } else {
+      const sign = (this.role === 'chaser') ? 1 : -1;
+      tx = (opponent.x - this.x) * sign;
+      ty = (opponent.y - this.y) * sign;
+    }
+
+    const curCx = Math.floor(this.x / CELL);
+    const curCy = Math.floor(this.y / CELL);
+    let freeNeighbours = 0;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]) {
+      if (cellFree(curCx+dx, curCy+dy)) freeNeighbours++;
+    }
+    const inOpenSpace = freeNeighbours >= 7;
+
+    if (this.role === 'chaser' && inOpenSpace &&
+        lineOfSightClear(this.x, this.y, opponent.x, opponent.y)) {
+      const losX = opponent.x - this.x;
+      const losY = opponent.y - this.y;
+      const losDist = Math.hypot(losX, losY);
+      const closeLOS = losDist < 200;
+      const bias = closeLOS ? 0.5 : aiMul.losChaseBias;
+      tx = tx * (1 - bias) + losX * bias;
+      ty = ty * (1 - bias) + losY * bias;
+    }
+
+    const len2 = Math.hypot(tx, ty) || 1;
+    tx /= len2; ty /= len2;
+
+    if (this.role === 'runner') {
+      const dx = this.x - opponent.x;
+      const dy = this.y - opponent.y;
+      const d = Math.hypot(dx, dy);
+      const REPEL_R = 90;
+      if (d < REPEL_R && d > 0.5) {
+        const strength = Math.pow((REPEL_R - d) / REPEL_R, 2);
+        tx += (dx / d) * strength * 5.0;
+        ty += (dy / d) * strength * 5.0;
+      }
+    }
+
+    const bumpMag = Math.abs(this.bumpedX) + Math.abs(this.bumpedY);
+    if (bumpMag > 0.1) {
+      this.bumpHeat = Math.min(15, this.bumpHeat + 2);
+      if (this.bumpedX !== 0) tx -= Math.sign(this.bumpedX) * 0.5;
+      if (this.bumpedY !== 0) ty -= Math.sign(this.bumpedY) * 0.5;
+    } else {
+      this.bumpHeat = Math.max(0, this.bumpHeat - 1);
+    }
+
+    const moved = Math.hypot(this.x - this.lastX, this.y - this.lastY);
+    if (moved < 0.4) this.stuckTimer += dtMs; else this.stuckTimer = 0;
+    this.lastX = this.x; this.lastY = this.y;
+
+    const unstickMs = cfg.unstickAfterMs * aiMul.unstickMul;
+    if (this.bumpHeat > 8 || this.stuckTimer > unstickMs) {
+      const sign = (this.stuckSide = -(this.stuckSide || 1));
+      const ox = tx, oy = ty;
+      tx = ox + -oy * sign * 0.8;
+      ty = oy +  ox * sign * 0.8;
+      this.waypoint  = null;
+      this.distField = null;
+      this.stuckTimer = 0;
+      this.bumpHeat   = Math.max(0, this.bumpHeat - 5);
+    } else if (this.bumpHeat < 1) {
+      const j = cfg.jitter * aiMul.jitterMul;
+      tx += (Math.random() - 0.5) * j;
+      ty += (Math.random() - 0.5) * j;
+    }
+
+    if (this.role === 'chaser') {
+      const distToOpp = Math.hypot(opponent.x - this.x, opponent.y - this.y);
+      const pc = cfg.pounceChance * aiMul.pounceMul * (dtMs / 16.67);
+      if (this.pounceReady && distToOpp < cfg.pounceRange && Math.random() < pc) {
+        if (lineOfSightClear(this.x, this.y, opponent.x, opponent.y)) this.tryPounce();
+      }
+    }
+
+    this.step(tx, ty, dtMs);
+  }
+
+  pickWaypoint() {
+    const mcx = Math.floor(this.x / CELL);
+    const mcy = Math.floor(this.y / CELL);
+    if (this.role === 'chaser') {
+      if (this.path && this.path.length) {
+        while (this.pathIdx < this.path.length &&
+               this.path[this.pathIdx].cx === mcx &&
+               this.path[this.pathIdx].cy === mcy) {
+          this.pathIdx++;
+        }
+        if (this.pathIdx < this.path.length) {
+          const c = this.path[this.pathIdx];
+          this.waypoint = { x: c.cx*CELL + CELL/2, y: c.cy*CELL + CELL/2,
+                            cx: c.cx, cy: c.cy,
+                            dx: Math.sign(c.cx - mcx), dy: Math.sign(c.cy - mcy) };
+          this.waypointDir = { dx: this.waypoint.dx, dy: this.waypoint.dy };
+          return;
+        }
+      }
+      this.waypoint = null;
+      return;
+    }
+    const NEI = [[1,0],[-1,0],[0,1],[0,-1]];
+    let best = null, bestDist = Infinity;
+    for (const [dx, dy] of NEI) {
+      const nx = mcx + dx, ny = mcy + dy;
+      if (!cellFree(nx, ny)) continue;
+      const v = this.distField[ny][nx];
+      if (v === undefined || v === Infinity) continue;
+      if (v < bestDist) {
+        bestDist = v;
+        best = { x: nx*CELL + CELL/2, y: ny*CELL + CELL/2, cx: nx, cy: ny, dx, dy };
+      }
+    }
+    if (best) this.waypointDir = { dx: best.dx, dy: best.dy };
+    this.waypoint = best;
+  }
+
+  draw(ctx, opts = {}) {
+    const s = this.size;
+    const now = performance.now();
+    this.animTime += 0.045;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.facing);
+
+    const isMoving = Math.hypot(this.moveX, this.moveY) > 0.2;
+    const breathAmt = isMoving ? 0 : Math.sin(this.animTime * 2.5) * 0.04;
+    const tailWag = Math.sin(this.animTime * (isMoving ? 9 : 3.5)) * (isMoving ? 0.55 : 0.3);
+
+    // shadow under cat
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(2, s*0.35, s*0.55, s*0.2, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Golden boost aura — shown while this cat has the speed boost
+    if (now < this.boostUntil) {
+      const remain = (this.boostUntil - now) / FOOD.boostMs;
+      const auraPulse = 0.7 + 0.3 * Math.sin(now * 0.02);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, remain) * auraPulse * 0.85;
+      ctx.fillStyle = '#ffd23a';
+      ctx.beginPath();
+      ctx.ellipse(0, s*0.28, s*0.78, s*0.28, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // --- TAIL (behind body) ---
+    ctx.save();
+    ctx.translate(-s*0.55, 0);
+    ctx.rotate(tailWag);
+    let tailColor = this.colors.body;
+    let tipColor;
+    if (this.role === 'runner') {
+      const flash = Math.floor(now / 180) % 2;
+      tailColor = flash ? '#ffe066' : '#ff8833';
+      tipColor  = flash ? '#ff8833' : '#ffe066';
+    } else {
+      tipColor = this.kind === 'shantanu' ? '#ffffff' : this.colors.belly;
+    }
+    const tailScale = this.role === 'runner' ? 1.35 : 1.0;
+    ctx.fillStyle = tailColor;
+    ctx.beginPath();
+    ctx.ellipse(-s*0.35, 0, s*0.4 * tailScale, s*0.13 * tailScale, 0, 0, Math.PI*2);
+    ctx.fill();
+    const tipSize = this.role === 'runner' ? s*0.22 : s*0.12;
+    ctx.fillStyle = tipColor;
+    ctx.beginPath();
+    ctx.ellipse(-s*0.7, 0, tipSize, tipSize * 0.8, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // --- BODY ---
+    const stretch = this.isPouncing ? 1.15 : 1.0;
+    const bodyW = s * 0.6 * stretch;
+    const bodyH = s * (0.42 + breathAmt);
+    ctx.fillStyle = this.colors.body;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, bodyW, bodyH, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = this.colors.belly;
+    ctx.beginPath();
+    ctx.ellipse(s*0.05, s*0.12, s*0.33, s*0.22, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    if (this.colors.stripes) {
+      ctx.strokeStyle = this.colors.stripes;
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+      for (let i = -2; i <= 2; i++) {
+        if (i === 0) continue;
+        ctx.beginPath();
+        const y0 = i * s*0.12;
+        ctx.moveTo(-s*0.3, y0);
+        ctx.quadraticCurveTo(-s*0.1, y0*1.3, s*0.15, y0);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(-s*0.3, 0); ctx.lineTo(s*0.2, 0);
+      ctx.stroke();
+    }
+
+    if (this.kind === 'shantanu') {
+      ctx.strokeStyle = 'rgba(200,190,175,0.5)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*bodyW*0.85, Math.sin(a)*bodyH*0.85);
+        ctx.lineTo(Math.cos(a)*bodyW*1.02, Math.sin(a)*bodyH*1.02);
+        ctx.stroke();
+      }
+    }
+
+    // --- HEAD ---
+    const headX = s * 0.48;
+    const headR = s * 0.33;
+    ctx.fillStyle = this.colors.head;
+    ctx.beginPath();
+    ctx.arc(headX, 0, headR, 0, Math.PI*2);
+    ctx.fill();
+
+    if (this.kind === 'shantanu') {
+      ctx.fillStyle = '#f5f0e6';
+      ctx.beginPath();
+      ctx.arc(headX + headR*0.2, headR*0.2, headR*0.55, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#f5f0e6';
+      ctx.beginPath();
+      ctx.arc(headX + headR*0.7, 0, headR*0.35, 0, Math.PI*2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = this.colors.belly;
+      ctx.beginPath();
+      ctx.arc(headX + headR*0.5, headR*0.15, headR*0.4, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // --- EARS ---
+    ctx.fillStyle = this.colors.head;
+    ctx.beginPath();
+    ctx.moveTo(headX - headR*0.15, -headR*0.75);
+    ctx.lineTo(headX + headR*0.25, -headR*1.15);
+    ctx.lineTo(headX + headR*0.55, -headR*0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(headX - headR*0.15, headR*0.75);
+    ctx.lineTo(headX + headR*0.25, headR*1.15);
+    ctx.lineTo(headX + headR*0.55, headR*0.55);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = this.colors.earIn;
+    ctx.beginPath();
+    ctx.moveTo(headX + headR*0.05, -headR*0.75);
+    ctx.lineTo(headX + headR*0.22, -headR*1.0);
+    ctx.lineTo(headX + headR*0.4, -headR*0.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(headX + headR*0.05, headR*0.75);
+    ctx.lineTo(headX + headR*0.22, headR*1.0);
+    ctx.lineTo(headX + headR*0.4, headR*0.6);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- EYES ---
+    const eyeOffset = headR * 0.45;
+    const eyeFwd = headR * 0.35;
+    ctx.fillStyle = this.colors.eye;
+    ctx.beginPath();
+    ctx.ellipse(headX + eyeFwd, -eyeOffset, headR*0.12, headR*0.16, 0, 0, Math.PI*2);
+    ctx.ellipse(headX + eyeFwd,  eyeOffset, headR*0.12, headR*0.16, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.ellipse(headX + eyeFwd + headR*0.03, -eyeOffset, headR*0.03, headR*0.13, 0, 0, Math.PI*2);
+    ctx.ellipse(headX + eyeFwd + headR*0.03,  eyeOffset, headR*0.03, headR*0.13, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // --- NOSE ---
+    ctx.fillStyle = this.colors.nose;
+    ctx.beginPath();
+    ctx.arc(headX + headR*0.82, 0, headR*0.09, 0, Math.PI*2);
+    ctx.fill();
+
+    if (this.isPouncing) {
+      ctx.strokeStyle = 'rgba(255,220,120,0.6)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-s*0.8, -s*0.25);
+      ctx.lineTo(-s*1.4, -s*0.35);
+      ctx.moveTo(-s*0.8, s*0.25);
+      ctx.lineTo(-s*1.4, s*0.35);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    if (opts.noLabel) return;
+
+    // --- NAME TAG & ROLE ---
+    ctx.save();
+    const tag = this.name;
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    const tw = ctx.measureText(tag).width;
+    const tagY = this.y - this.size - 10;
+    ctx.fillStyle = this.isPlayer ? 'rgba(255,217,102,0.92)' : 'rgba(40,40,60,0.85)';
+    ctx.strokeStyle = this.role === 'chaser' ? '#ff4466' : 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, this.x - tw/2 - 6, tagY - 10, tw + 12, 16, 7, true, true);
+    ctx.fillStyle = this.isPlayer ? '#1a1a2a' : '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tag, this.x, tagY - 2);
+
+    ctx.font = 'bold 11px system-ui, sans-serif';
+    if (this.role === 'chaser') {
+      ctx.fillStyle = '#ff4466';
+      ctx.fillText('IT!', this.x, tagY - 20);
+    } else if (this.role === 'runner') {
+      const pulse = 0.55 + 0.45 * Math.abs(Math.sin(now * 0.008));
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#66ffaa';
+      ctx.fillText('RUN!', this.x, tagY - 20);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+/** Simple line-of-sight via stepping — used so AI doesn't pounce through walls. */
+function lineOfSightClear(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const steps = Math.ceil(Math.hypot(dx, dy) / 6);
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const px = x1 + dx*t, py = y1 + dy*t;
+    const probe = {x:px-2, y:py-2, w:4, h:4};
+    for (const b of blockers) if (rectOverlap(probe, b)) return false;
+  }
+  return true;
+}
+
+/* ============================================================
+ * PARTICLES & EFFECTS
+ * ============================================================ */
+const particles = [];
+function spawnPuff(x, y, count, color) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 2.8 + 0.8;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * speed,
+      vy: Math.sin(a) * speed,
+      life: 1.0,
+      size: Math.random() * 4 + 3,
+      color,
+    });
+  }
+}
+function updateParticles(dt) {
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    p.vx *= 0.9; p.vy *= 0.9;
+    p.life -= dt * 0.0025;
+  }
+  for (let i = particles.length - 1; i >= 0; i--) if (particles[i].life <= 0) particles.splice(i, 1);
+}
+function drawParticles(ctx) {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life) * 0.9;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * Math.max(0.2, p.life), 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+let meowBubble = null;
+function spawnMeow(x, y, text='Meow!') {
+  meowBubble = { x, y, life: 1.8, text };
+}
+function updateMeow(dt) {
+  if (!meowBubble) return;
+  meowBubble.life -= dt * 0.001;
+  meowBubble.y -= dt * 0.02;
+  if (meowBubble.life <= 0) meowBubble = null;
+}
+function drawMeow(ctx) {
+  if (!meowBubble) return;
+  const b = meowBubble;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, b.life);
+  ctx.font = 'bold 18px system-ui, sans-serif';
+  const tw = ctx.measureText(b.text).width;
+  const px = b.x - tw/2 - 10, py = b.y - 46;
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  roundRect(ctx, px, py, tw+20, 26, 10, true, true);
+  ctx.beginPath();
+  ctx.moveTo(b.x-6, py+26);
+  ctx.lineTo(b.x,   py+36);
+  ctx.lineTo(b.x+6, py+26);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e04060';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(b.text, b.x, py + 13);
+  ctx.restore();
+}
+
+/* ============================================================
+ * GAME LOG — records AI state every 100ms during play
+ * ============================================================ */
+window.catLog = [];
+const LOG_MAX = 5000;
+let _lastLogAt = 0;
+let _stuckWindow = [];
+
+function logTick(now) {
+  if (state.mode !== 'playing') return;
+  if (now - _lastLogAt < 100) return;
+  _lastLogAt = now;
+  const ai = cats[state.aiKind];
+  const pl = cats[state.playerKind];
+  if (!ai || !pl) return;
+
+  _stuckWindow.push({ t: now, x: ai.x, y: ai.y });
+  while (_stuckWindow.length && now - _stuckWindow[0].t > 2000) _stuckWindow.shift();
+  let travel2s = 0;
+  for (let i = 1; i < _stuckWindow.length; i++) {
+    travel2s += Math.hypot(_stuckWindow[i].x - _stuckWindow[i-1].x,
+                           _stuckWindow[i].y - _stuckWindow[i-1].y);
+  }
+  const isStuck = _stuckWindow.length >= 15 && travel2s < 60;
+
+  const entry = {
+    t:     Math.round(now),
+    round: state.round,
+    aiK:   state.aiKind,
+    aiRole: ai.role,
+    aiX:   Math.round(ai.x), aiY: Math.round(ai.y),
+    aiCell: [Math.floor(ai.x/CELL), Math.floor(ai.y/CELL)],
+    aiWP:  ai.waypoint   ? [ai.waypoint.cx, ai.waypoint.cy] : null,
+    aiDir: ai.waypointDir ? [ai.waypointDir.dx, ai.waypointDir.dy] : null,
+    aiFT:  ai.fleeTarget ? [ai.fleeTarget.cx, ai.fleeTarget.cy] : null,
+    aiBump: +ai.bumpHeat.toFixed(1),
+    plX:   Math.round(pl.x), plY: Math.round(pl.y),
+    dist:  Math.round(Math.hypot(ai.x-pl.x, ai.y-pl.y)),
+    trvl2s: Math.round(travel2s),
+    stuck: isStuck ? 1 : 0,
+    food:      state.food ? [state.food.x|0, state.food.y|0] : null,
+    foodEater: state.foodEater,
+    boostAI:   Math.max(0, Math.round(ai.boostUntil - now)),
+    boostPl:   Math.max(0, Math.round(pl.boostUntil - now)),
+  };
+  window.catLog.push(entry);
+  if (window.catLog.length > LOG_MAX) window.catLog.shift();
+
+  if (isStuck && !window._stuckWarned) {
+    window._stuckWarned = true;
+    console.warn('[CAT-CHASE] STUCK detected',
+      'round', state.round, 'ai', state.aiKind, 'pos', [ai.x|0, ai.y|0],
+      'cell', entry.aiCell, 'wp', entry.aiWP, 'ft', entry.aiFT,
+      'travel2s', travel2s|0);
+  } else if (!isStuck && travel2s > 100) {
+    window._stuckWarned = false;
+  }
+
+  if (window.catLog.length % 50 === 0) {
+    try {
+      localStorage.setItem('catChaseLog',
+        JSON.stringify(window.catLog.slice(-800)));
+    } catch (e) { /* ignore quota */ }
+  }
+}
+
+function copyLogToClipboard() {
+  const blob = { recorded: new Date().toISOString(), frames: window.catLog.slice(-800) };
+  const text = JSON.stringify(blob, null, 1);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => alert(`Log copied (${blob.frames.length} frames). Paste it to Claude.`),
+      () => fallback()
+    );
+  } else fallback();
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert(`Log copied (${blob.frames.length} frames). Paste it to Claude.`);
+  }
+}
+
+/* ============================================================
+ * AUDIO — real cat-meow mp3s for cat voices + synth music bed
+ * ============================================================ */
+let audioCtx = null;
+let audioMuted = false;
+let lastProximityMeow = 0;
+let musicScheduler = null;
+
+function ensureAudio() {
+  if (audioCtx) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return;
+  }
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch (e) { audioCtx = null; }
+}
+document.addEventListener('click',   ensureAudio, {once: true});
+document.addEventListener('keydown', ensureAudio, {once: true});
+
+// Preload all 89 real meow recordings from ./meows/meow_NN.mp3
+const MEOW_COUNT = 89;
+const meowPool = [];
+for (let i = 1; i <= MEOW_COUNT; i++) {
+  const padded = String(i).padStart(2, '0');
+  const audio = new Audio(`meows/meow_${padded}.mp3`);
+  audio.preload = 'auto';
+  meowPool.push(audio);
+}
+
+function playMeow(opts = {}) {
+  if (audioMuted) return;
+  const src = meowPool[Math.floor(Math.random() * meowPool.length)];
+  const a = src.cloneNode();
+  a.volume = Math.max(0, Math.min(1, (opts.volume !== undefined ? opts.volume * 2.8 : 0.6)));
+  a.currentTime = 0;
+  a.play().catch(() => { /* ignore autoplay / file-not-found */ });
+}
+
+function startBackgroundMusic() {
+  if (!audioCtx || audioMuted || musicScheduler) return;
+  const BEAT_MS = 215;
+
+  const BASSES = [
+    // Dm - Dm - Gm - A7
+    [73.42,110.00,87.31,73.42, 73.42,87.31,110.00,130.81, 98.00,116.54,146.83,98.00, 110.00,138.59,164.81,196.00],
+    // Am - F - C - G
+    [55.00,82.41,65.41,55.00, 87.31,130.81,103.83,87.31, 65.41,98.00,130.81,98.00, 98.00,146.83,123.47,98.00],
+    // Em - C - G - D
+    [82.41,123.47,98.00,82.41, 65.41,98.00,130.81,98.00, 98.00,146.83,123.47,98.00, 73.42,110.00,87.31,73.42],
+    // Bbm - F#7 - Ebm - F7
+    [58.27,87.31,69.30,58.27, 92.50,138.59,116.54,92.50, 77.78,116.54,92.50,77.78, 87.31,130.81,110.00,87.31],
+    // Cm - Ab - Eb - Bb
+    [65.41,98.00,77.78,65.41, 51.91,77.78,103.83,77.78, 77.78,116.54,92.50,77.78, 58.27,87.31,69.30,58.27],
+  ];
+  window._BASSES = BASSES;
+
+  const MELODIES = [
+    [null,null,349.23,293.66,null,null,null,440.00,466.16,null,587.33,null,null,440.00,null,293.66],
+    [293.66,null,349.23,null,440.00,null,466.16,null,523.25,null,587.33,null,659.25,null,440.00,null],
+    [null,null,null,587.33,null,null,null,466.16,null,null,null,523.25,null,null,null,349.23],
+    [349.23,440.00,349.23,293.66,349.23,440.00,466.16,440.00,466.16,587.33,466.16,440.00,440.00,523.25,466.16,349.23],
+    [293.66,311.13,329.63,349.23,null,349.23,329.63,311.13,293.66,null,null,349.23,null,440.00,null,293.66],
+    [null,587.33,null,349.23,null,587.33,null,440.00,null,466.16,null,587.33,null,440.00,null,293.66],
+    [null,220.00,null,261.63,null,220.00,null,293.66,null,233.08,null,293.66,null,220.00,null,246.94],
+    [null,null,659.25,587.33,null,null,698.46,659.25,null,null,783.99,698.46,null,587.33,659.25,587.33],
+    [587.33,null,523.25,null,466.16,null,440.00,null,349.23,null,329.63,null,293.66,null,261.63,293.66],
+    [null,293.66,null,349.23,null,null,null,440.00,null,349.23,null,293.66,null,null,null,220.00],
+    [null,349.23,349.23,null,null,440.00,440.00,null,null,466.16,466.16,null,null,440.00,440.00,293.66],
+    [null,293.66,null,440.00,null,349.23,null,523.25,null,466.16,null,698.46,null,440.00,null,587.33],
+    [293.66,null,349.23,587.33,null,null,293.66,null,349.23,null,466.16,587.33,null,null,440.00,293.66],
+    [null,293.66,349.23,440.00,466.16,null,587.33,null,698.46,null,587.33,440.00,466.16,349.23,293.66,null],
+    [null,null,523.25,null,587.33,null,622.25,null,659.25,null,587.33,null,440.00,null,293.66,null],
+    [null,null,174.61,null,null,null,196.00,null,null,null,233.08,null,null,null,220.00,null],
+    [293.66,null,349.23,null,440.00,null,293.66,null,349.23,null,466.16,null,440.00,null,349.23,293.66],
+    [null,null,null,null,698.46,659.25,587.33,523.25,466.16,440.00,349.23,293.66,null,440.00,null,293.66],
+    [349.23,null,440.00,null,349.23,null,440.00,null,466.16,null,587.33,null,466.16,null,293.66,null],
+    [null,null,null,440.00,null,null,null,523.25,null,null,null,587.33,null,null,null,null],
+  ];
+  window._MELODIES = MELODIES;
+
+  const isKick  = (i) => (i % 4 === 0);
+  const isSnare = (i) => (i % 4 === 2);
+  const isHat   = (i) => (i % 2 === 1);
+
+  const kick = (t) => {
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, t);
+    osc.frequency.exponentialRampToValueAtTime(38, t + 0.08);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.09, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.2);
+  };
+  const bassNote = (t, f) => {
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.025, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 800;
+    osc.connect(lp).connect(g).connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.32);
+  };
+  const melNote = (t, f) => {
+    const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.035, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.55);
+  };
+  const hat = (t) => {
+    const buf = audioCtx.createBuffer(1, 1024, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 7000;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.025, t + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    src.connect(hp).connect(g).connect(audioCtx.destination);
+    src.start(t); src.stop(t + 0.08);
+  };
+  const snare = (t) => {
+    const buf = audioCtx.createBuffer(1, 2048, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = audioCtx.createBufferSource(); src.buffer = buf;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 1.5;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.06, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    src.connect(bp).connect(g).connect(audioCtx.destination);
+    src.start(t); src.stop(t + 0.15);
+  };
+
+  let step = 0;
+  const tick = () => {
+    if (!audioCtx || audioMuted) { musicScheduler = null; return; }
+    const t = audioCtx.currentTime;
+    const i = step % 16;
+
+    if (isKick(i))  kick(t);
+    if (isSnare(i)) snare(t);
+    if (isHat(i))   hat(t);
+
+    const curBass = window._BASSES[(window._bassSeed || 0) % window._BASSES.length];
+    const curLead = window._MELODIES[(window._musicSeed || 0) % window._MELODIES.length];
+    bassNote(t, curBass[i]);
+    if (curLead[i]) melNote(t, curLead[i]);
+
+    if (i === 15) melNote(t, 739.99);
+
+    step++;
+    musicScheduler = setTimeout(tick, BEAT_MS);
+  };
+  tick();
+}
+function stopBackgroundMusic() {
+  if (musicScheduler) { clearTimeout(musicScheduler); musicScheduler = null; }
+}
+function toggleMute() {
+  audioMuted = !audioMuted;
+  if (audioMuted) stopBackgroundMusic();
+  else { ensureAudio(); startBackgroundMusic(); }
+}
+
+/* ============================================================
+ * INPUT
+ * ============================================================ */
+const keys = Object.create(null);
+let pouncePressed = false;
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (e.code === 'Space' || e.key === ' ') {
+    if (!keys['space']) pouncePressed = true;
+    keys['space'] = true;
+    e.preventDefault();
+    return;
+  }
+  keys[k] = true;
+  if (k === 'p') togglePause();
+  if (k === 'r' && state.mode !== 'menu') resetMatch(true);
+  if (k === 'm') toggleMute();
+}, {passive: false});
+window.addEventListener('keyup', e => {
+  if (e.code === 'Space' || e.key === ' ') { keys['space'] = false; return; }
+  keys[e.key.toLowerCase()] = false;
+});
+
+function playerMoveVector() {
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup'])    dy -= 1;
+  if (keys['s'] || keys['arrowdown'])  dy += 1;
+  if (keys['a'] || keys['arrowleft'])  dx -= 1;
+  if (keys['d'] || keys['arrowright']) dx += 1;
+  return [dx, dy];
+}
+
+/* ============================================================
+ * GAME STATE
+ * ============================================================ */
+const state = {
+  mode: 'menu',
+  prevMode: null,
+  playerKind: null,
+  aiKind: null,
+  scores: { ehun: 0, shantanu: 0 },
+  round: 0,
+  roundStart: 0,
+  countdownUntil: 0,
+  roundoverUntil: 0,
+  lastWinner: null,
+  playerChasing: true,
+  // FOOD state
+  food:        null,   // {x,y} while fish is active
+  foodSpawnAt: 0,      // ms timestamp when fish will appear
+  foodEater:   null,   // 'ehun' | 'shantanu' after pickup
+};
+
+const cats = { ehun: new Cat('ehun'), shantanu: new Cat('shantanu') };
+
+function setPlayerKind(kind) {
+  state.playerKind = kind;
+  state.aiKind = kind === 'ehun' ? 'shantanu' : 'ehun';
+  cats.ehun.isPlayer     = (kind === 'ehun');
+  cats.shantanu.isPlayer = (kind === 'shantanu');
+}
+
+function beginMatch() {
+  ensureAudio();
+  window._musicSeed = Math.floor(Math.random() * 20);
+  window._bassSeed  = Math.floor(Math.random() * 5);
+  stopBackgroundMusic();
+  startBackgroundMusic();
+  state.scores.ehun = 0;
+  state.scores.shantanu = 0;
+  state.round = 0;
+  const urlRole = new URLSearchParams(location.search).get('role');
+  if (urlRole === 'runner')       state.firstRoundPlayerChases = false;
+  else if (urlRole === 'chaser')  state.firstRoundPlayerChases = true;
+  else                            state.firstRoundPlayerChases = Math.random() < 0.5;
+  startNextRound();
+}
+
+function startNextRound() {
+  state.round += 1;
+  const prevM = window._musicSeed, prevB = window._bassSeed;
+  let nm, nb;
+  do { nm = Math.floor(Math.random() * 20); } while (nm === prevM);
+  do { nb = Math.floor(Math.random() * 5);  } while (nb === prevB);
+  window._musicSeed = nm;
+  window._bassSeed  = nb;
+
+  state.playerChasing = ((state.round - 1) % 2 === 0)
+    ? state.firstRoundPlayerChases
+    : !state.firstRoundPlayerChases;
+  const playerCat = cats[state.playerKind];
+  const aiCat     = cats[state.aiKind];
+  playerCat.role = state.playerChasing ? 'chaser' : 'runner';
+  aiCat.role     = state.playerChasing ? 'runner' : 'chaser';
+
+  const pair = randomSpawnPair();
+  const chaser = state.playerChasing ? playerCat : aiCat;
+  const runner = state.playerChasing ? aiCat : playerCat;
+  chaser.reset(pair[0]);
+  runner.reset(pair[1]);
+
+  state.mode = 'countdown';
+  state.countdownUntil = performance.now() + COUNTDOWN_MS;
+  state.roundStart = state.countdownUntil;
+
+  // FOOD: clear any leftover fish; actual spawn time is rolled when the
+  // round actually begins (player's first move → 'playing' mode).
+  state.food        = null;
+  state.foodEater   = null;
+  state.foodSpawnAt = 0;
+
+  showRoundPanel();
+}
+
+function endRound(winner) {
+  state.lastWinner = winner;
+  state.scores[winner] += 1;
+  if (state.scores.ehun >= ROUNDS_TO_WIN || state.scores.shantanu >= ROUNDS_TO_WIN || state.round >= MAX_ROUNDS) {
+    state.mode = 'gameover';
+    showGameOverPanel();
+    return;
+  }
+  state.mode = 'roundover';
+  state.roundoverUntil = performance.now() + 2400;
+  showRoundOverPanel();
+}
+
+function togglePause() {
+  if (state.mode === 'menu' || state.mode === 'gameover') return;
+  if (state.mode === 'paused') {
+    const pauseDur = performance.now() - state.pauseStart;
+    state.roundStart      += pauseDur;
+    state.countdownUntil  += pauseDur;
+    state.roundoverUntil  += pauseDur;
+    if (state.foodSpawnAt) state.foodSpawnAt += pauseDur;
+    for (const k of ['ehun','shantanu']) {
+      cats[k].pounceUntil          += pauseDur;
+      cats[k].pounceCooldownUntil  += pauseDur;
+      cats[k].boostUntil           += pauseDur;
+    }
+    state.mode = state.prevMode || 'playing';
+    showOverlayFor(state.mode);
+  } else {
+    state.pauseStart = performance.now();
+    state.prevMode = state.mode;
+    state.mode = 'paused';
+    showOverlayFor('paused');
+  }
+}
+
+function resetMatch(toMenu) {
+  if (toMenu) {
+    state.mode = 'menu';
+    showOverlayFor('menu');
+    return;
+  }
+  beginMatch();
+}
+
+/* ============================================================
+ * OVERLAY / PANELS
+ * ============================================================ */
+const panels = {
+  start:    document.getElementById('start-panel'),
+  round:    document.getElementById('round-panel'),
+  roundover:document.getElementById('roundover-panel'),
+  gameover: document.getElementById('gameover-panel'),
+  pause:    document.getElementById('pause-panel'),
+};
+const overlay = document.getElementById('overlay');
+
+function showPanel(name) {
+  for (const k in panels) panels[k].classList.add('hidden');
+  if (name) panels[name].classList.remove('hidden');
+}
+
+function showOverlayFor(mode) {
+  if (mode === 'menu')        { overlay.classList.add('show'); showPanel('start'); }
+  else if (mode === 'countdown') { overlay.classList.add('show'); showPanel('round'); }
+  else if (mode === 'roundover') { overlay.classList.add('show'); showPanel('roundover'); }
+  else if (mode === 'gameover')  { overlay.classList.add('show'); showPanel('gameover'); }
+  else if (mode === 'paused')    { overlay.classList.add('show'); showPanel('pause'); }
+  else                           { overlay.classList.remove('show'); showPanel(null); }
+}
+
+function showRoundPanel() {
+  document.getElementById('round-title').textContent = `Round ${state.round}`;
+  const chasing = state.playerChasing;
+  document.getElementById('role-line').textContent = chasing ? 'You are the CHASER 🐾' : 'You are the RUNNER 💨';
+  document.getElementById('round-goal').textContent = chasing
+    ? `Catch ${CAT_STATS[state.aiKind].displayName} within 15 seconds!`
+    : `Survive for 15 seconds — don't let ${CAT_STATS[state.aiKind].displayName} touch you!`;
+  showOverlayFor('countdown');
+}
+
+function showRoundOverPanel() {
+  const winnerName = CAT_STATS[state.lastWinner].displayName;
+  const isPlayerWin = state.lastWinner === state.playerKind;
+  const chaserWon = (state.lastWinner === (state.playerChasing ? state.playerKind : state.aiKind));
+  document.getElementById('roundover-title').textContent = chaserWon
+    ? (isPlayerWin ? 'Got them! 🐾' : 'Caught! 😿')
+    : (isPlayerWin ? 'You escaped! 🏃' : 'They escaped! ⏱');
+  document.getElementById('roundover-score').textContent =
+    `Ehun ${state.scores.ehun} · Shantanu ${state.scores.shantanu}`;
+  document.getElementById('roundover-sub').textContent =
+    `${winnerName} takes round ${state.round}. Next round starting…`;
+  showOverlayFor('roundover');
+}
+
+function showGameOverPanel() {
+  const winner = state.scores.ehun > state.scores.shantanu ? 'ehun' : 'shantanu';
+  const winnerName = CAT_STATS[winner].displayName;
+  const isPlayerWin = winner === state.playerKind;
+  document.getElementById('gameover-title').textContent = isPlayerWin
+    ? `🏆 You win! ${winnerName} takes the match!`
+    : `😿 ${winnerName} wins the match!`;
+  document.getElementById('go-ehun').textContent = state.scores.ehun;
+  document.getElementById('go-shantanu').textContent = state.scores.shantanu;
+  showOverlayFor('gameover');
+}
+
+for (const btn of document.querySelectorAll('#start-panel button[data-cat]')) {
+  btn.addEventListener('click', () => {
+    setPlayerKind(btn.dataset.cat);
+    beginMatch();
+  });
+}
+document.getElementById('play-again').addEventListener('click', () => {
+  state.mode = 'menu';
+  showOverlayFor('menu');
+});
+document.getElementById('pause-reset').addEventListener('click', () => {
+  state.mode = 'menu';
+  showOverlayFor('menu');
+});
+document.getElementById('fab-reset').addEventListener('click', () => {
+  state.mode = 'menu';
+  showOverlayFor('menu');
+});
+document.getElementById('fab-log').addEventListener('click', copyLogToClipboard);
+
+/* ============================================================
+ * RENDER — map, furniture, cats, UI
+ * ============================================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function drawFloor() {
+  ctx.fillStyle = '#2b2437';
+  ctx.fillRect(0, 0, W, H);
+
+  paintRoom(10, 10,   280, 210, '#3a3248');   // kitchen
+  paintRoom(290, 10,  250, 210, '#3c3350');   // dining
+  paintRoom(540, 10,  80,  210, '#2f2a3e');   // hallway top
+  paintRoom(620, 10,  330, 290, '#433755');   // master bedroom
+  paintRoom(10, 220,  610, 410, '#3a334a');   // living room
+  paintRoom(620, 300, 200, 330, '#3f3552');   // bedroom 2
+  paintRoom(820, 300, 130, 330, '#2c3a2c');   // balcony
+  paintRoom(10, 490,  160, 140, '#2e2e4a');   // toilet
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+  ctx.lineWidth = 1;
+  for (let yy = 232; yy < 625; yy += 30) {
+    ctx.beginPath();
+    ctx.moveTo(14, yy); ctx.lineTo(615, yy);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.09)';
+  ctx.font = 'bold 12px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const l of roomLabels) ctx.fillText(l.text, l.x, l.y);
+}
+
+function paintRoom(x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
+  ctx.fillRect(x, y, w, 2);
+  ctx.fillRect(x, y, 2, h);
+}
+
+function drawWalls() {
+  for (const w of walls) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(w.x+2, w.y+3, w.w, w.h);
+    ctx.fillStyle = '#888898';
+    ctx.fillRect(w.x, w.y, w.w, w.h);
+    ctx.fillStyle = '#b4b4c4';
+    ctx.fillRect(w.x, w.y, w.w, 2);
+    ctx.fillRect(w.x, w.y, 2, w.h);
+  }
+}
+
+function drawFurniture() {
+  for (const f of furniture) drawFurniturePiece(f);
+}
+
+function drawFurniturePiece(f) {
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fillRect(f.x + 2, f.y + 3, f.w, f.h);
+
+  switch (f.type) {
+    case 'counter':
+      ctx.fillStyle = '#6a5c45';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#8a7a5e';
+      ctx.fillRect(f.x, f.y, f.w, 3);
+      break;
+    case 'fridge':
+      ctx.fillStyle = '#c4c8d0';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#8a9098';
+      ctx.fillRect(f.x, f.y + f.h*0.45, f.w, 2);
+      ctx.fillStyle = '#505460';
+      ctx.fillRect(f.x + f.w - 8, f.y + 10, 3, 10);
+      break;
+    case 'stove':
+      ctx.fillStyle = '#2a2a36';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#505058';
+      for (let i = 0; i < 4; i++) {
+        const bx = f.x + 8 + (i%2)*(f.w-20);
+        const by = f.y + 6 + Math.floor(i/2)*(f.h-14);
+        ctx.beginPath(); ctx.arc(bx, by, 4, 0, Math.PI*2); ctx.fill();
+      }
+      break;
+    case 'table':
+      ctx.fillStyle = '#5a3f24';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#7a5634';
+      ctx.fillRect(f.x+3, f.y+3, f.w-6, f.h-6);
+      ctx.fillStyle = '#5a3f24';
+      ctx.fillRect(f.x+6, f.y+6, f.w-12, f.h-12);
+      break;
+    case 'bed':
+      ctx.fillStyle = '#d5d8e4';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#5b6d88';
+      ctx.fillRect(f.x, f.y + f.h*0.35, f.w, f.h*0.65);
+      ctx.fillStyle = '#f2f2f6';
+      roundRect(ctx, f.x + 6, f.y + 6, f.w*0.4, f.h*0.22, 6, true, false);
+      roundRect(ctx, f.x + f.w*0.5, f.y + 6, f.w*0.4, f.h*0.22, 6, true, false);
+      ctx.strokeStyle = '#3a2a1c';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(f.x, f.y, f.w, f.h);
+      break;
+    case 'nightstand':
+      ctx.fillStyle = '#4a3420';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#705030';
+      ctx.fillRect(f.x+2, f.y+2, f.w-4, f.h-4);
+      break;
+    case 'dresser':
+      ctx.fillStyle = '#5a3f24';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#2a1a0c';
+      ctx.fillRect(f.x+3, f.y + f.h*0.5 - 1, f.w-6, 2);
+      ctx.fillRect(f.x + f.w*0.5 - 1, f.y+3, 2, f.h-6);
+      break;
+    case 'couch':
+      ctx.fillStyle = '#4a5e78';
+      roundRect(ctx, f.x, f.y, f.w, f.h, 8, true, false);
+      ctx.fillStyle = '#5d7592';
+      roundRect(ctx, f.x + 6, f.y + 6, f.w - 12, f.h - 10, 6, true, false);
+      ctx.strokeStyle = '#334455';
+      ctx.lineWidth = 1;
+      const cushions = Math.max(2, Math.floor(f.w / 55));
+      for (let i = 1; i < cushions; i++) {
+        const cx = f.x + (f.w * i / cushions);
+        ctx.beginPath(); ctx.moveTo(cx, f.y+6); ctx.lineTo(cx, f.y+f.h-4); ctx.stroke();
+      }
+      break;
+    case 'armchair':
+      ctx.fillStyle = '#4a5e78';
+      roundRect(ctx, f.x, f.y, f.w, f.h, 10, true, false);
+      ctx.fillStyle = '#5d7592';
+      roundRect(ctx, f.x+8, f.y+8, f.w-16, f.h-16, 6, true, false);
+      break;
+    case 'rug-table':
+      ctx.fillStyle = '#5a3c4a';
+      ctx.fillRect(f.x - 30, f.y - 20, f.w + 60, f.h + 40);
+      ctx.fillStyle = '#703f5a';
+      ctx.fillRect(f.x - 24, f.y - 14, f.w + 48, f.h + 28);
+      ctx.fillStyle = '#5a3f24';
+      roundRect(ctx, f.x, f.y, f.w, f.h, 6, true, false);
+      ctx.fillStyle = '#7a5634';
+      roundRect(ctx, f.x+4, f.y+4, f.w-8, f.h-8, 4, true, false);
+      break;
+    case 'tvstand':
+      ctx.fillStyle = '#2a2a36';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      ctx.fillStyle = '#1a1a24';
+      ctx.fillRect(f.x+4, f.y+4, f.w-8, f.h-8);
+      ctx.fillStyle = '#4cd3ff';
+      ctx.fillRect(f.x+8, f.y+7, f.w-16, f.h-14);
+      break;
+    case 'bowl':
+      ctx.fillStyle = '#a06030';
+      ctx.beginPath();
+      ctx.ellipse(f.x + f.w/2, f.y + f.h/2, f.w/2, f.h/2, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#c88048';
+      ctx.beginPath();
+      ctx.ellipse(f.x + f.w/2, f.y + f.h/2, f.w/2 - 3, f.h/2 - 3, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#5a3418';
+      ctx.beginPath();
+      ctx.ellipse(f.x + f.w/2, f.y + f.h/2, f.w/2 - 6, f.h/2 - 6, 0, 0, Math.PI*2);
+      ctx.fill();
+      break;
+    case 'plant':
+      ctx.fillStyle = '#6a4a30';
+      ctx.fillRect(f.x + f.w*0.15, f.y + f.h*0.55, f.w*0.7, f.h*0.45);
+      ctx.fillStyle = '#4a8a4a';
+      ctx.beginPath();
+      ctx.arc(f.x + f.w*0.5, f.y + f.h*0.38, f.w*0.42, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#6aaa6a';
+      ctx.beginPath();
+      ctx.arc(f.x + f.w*0.35, f.y + f.h*0.32, f.w*0.22, 0, Math.PI*2);
+      ctx.arc(f.x + f.w*0.7,  f.y + f.h*0.32, f.w*0.22, 0, Math.PI*2);
+      ctx.fill();
+      break;
+    default:
+      ctx.fillStyle = '#666';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+  }
+}
+
+function drawCenteredText(text, y, size, color='#ffd966') {
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.font = `bold ${size}px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(text, W/2 + 3, y + 3);
+  ctx.fillStyle = color;
+  ctx.fillText(text, W/2, y);
+}
+
+/** Render the golden fish at state.food.x,y with halo + bob + pulse. */
+function drawFood(ctx) {
+  if (!state.food) return;
+  const { x, y } = state.food;
+  const now = performance.now();
+  const pulse = 1.0 + 0.10 * Math.sin(now * 0.006);
+  const bob   = Math.sin(now * 0.004) * 2;
+
+  ctx.save();
+  ctx.translate(x, y + bob);
+
+  // Glow halo
+  const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
+  grad.addColorStop(0, 'rgba(255,220,80,0.55)');
+  grad.addColorStop(1, 'rgba(255,220,80,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI*2); ctx.fill();
+
+  // Body
+  const bw = 11 * pulse, bh = 6 * pulse;
+  ctx.fillStyle = '#ffd23a';
+  ctx.beginPath(); ctx.ellipse(0, 0, bw, bh, 0, 0, Math.PI*2); ctx.fill();
+
+  // Belly curve
+  ctx.strokeStyle = '#c49312'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-bw*0.7, 1);
+  ctx.quadraticCurveTo(0, 3, bw*0.7, 1);
+  ctx.stroke();
+
+  // Tail
+  ctx.fillStyle = '#ffb020';
+  ctx.beginPath();
+  ctx.moveTo(-bw, 0);
+  ctx.lineTo(-bw - 6, -5);
+  ctx.lineTo(-bw - 6,  5);
+  ctx.closePath(); ctx.fill();
+
+  // Eye + gleam
+  ctx.fillStyle = '#1a1a2a';
+  ctx.beginPath(); ctx.arc(bw*0.55, -bh*0.4, 1.3, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff8c8';
+  ctx.beginPath(); ctx.arc(bw*0.60, -bh*0.5, 0.6, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+}
+
+/* ============================================================
+ * GAME LOOP
+ * ============================================================ */
+let lastT = performance.now();
+
+function loop(now) {
+  const dt = Math.min(50, now - lastT);
+  lastT = now;
+
+  if (state.mode === 'playing') {
+    stepPlaying(dt);
+  } else if (state.mode === 'countdown') {
+    if (now >= state.countdownUntil) {
+      state.mode = 'ready';
+      overlay.classList.remove('show');
+      showPanel(null);
+    } else {
+      const left = Math.max(0, Math.ceil((state.countdownUntil - now) / 1000));
+      document.getElementById('countdown-text').textContent =
+        left > 0 ? `Starting in ${left}…` : 'GO!';
+    }
+  } else if (state.mode === 'ready') {
+    const [ix, iy] = playerMoveVector();
+    if (ix !== 0 || iy !== 0) {
+      state.mode = 'playing';
+      state.roundStart = now;
+      playMeow({ pitch: 420, volume: 0.14, duration: 0.45 });
+      setTimeout(() => playMeow({ pitch: 360, volume: 0.12, duration: 0.45 }), 220);
+      // Roll a surprise spawn time in [spawnMin, spawnMax] from round start.
+      state.foodSpawnAt = now
+        + FOOD.spawnMinMs
+        + Math.random() * (FOOD.spawnMaxMs - FOOD.spawnMinMs);
+    }
+  } else if (state.mode === 'roundover') {
+    if (now >= state.roundoverUntil) startNextRound();
+  }
+
+  updateParticles(dt);
+  updateMeow(dt);
+  logTick(now);
+
+  drawFloor();
+  drawFurniture();
+  drawWalls();
+
+  const order = [cats.ehun, cats.shantanu];
+  order.sort((a,b) => (a.role === 'chaser' ? 1 : 0) - (b.role === 'chaser' ? 1 : 0));
+  for (const c of order) c.draw(ctx);
+
+  drawFood(ctx);
+
+  drawParticles(ctx);
+  drawMeow(ctx);
+
+  if (state.mode === 'countdown') {
+    const left = Math.max(0, Math.ceil((state.countdownUntil - now) / 1000));
+    drawCenteredText(left > 0 ? String(left) : 'GO!', H/2 + 8, 80);
+  } else if (state.mode === 'ready') {
+    const pulse = 0.7 + 0.3 * Math.sin(now * 0.006);
+    ctx.globalAlpha = pulse;
+    drawCenteredText('Move to start!', H/2 + 8, 36, '#ffd966');
+    ctx.globalAlpha = 1;
+  } else if (state.mode === 'playing') {
+    const left = Math.max(0, ROUND_TIME - (now - state.roundStart));
+    const secs = left / 1000;
+    const color = secs < 5 ? '#ff4466'
+                : secs < 10 ? '#ffaa33'
+                            : '#ffe066';
+    const pulseRate = secs < 5 ? 0.018 : secs < 10 ? 0.008 : 0.004;
+    const pulse = 0.75 + 0.25 * Math.abs(Math.sin(now * pulseRate));
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.font = 'bold 40px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const text = secs.toFixed(1);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillText(text, W/2 + 3, 18 + 3);
+    ctx.fillStyle = color;
+    ctx.fillText(text, W/2, 18);
+    ctx.restore();
+  }
+
+  updateHUD(now);
+
+  requestAnimationFrame(loop);
+}
+
+function stepPlaying(dt) {
+  const player = cats[state.playerKind];
+  const ai     = cats[state.aiKind];
+
+  let [ix, iy] = playerMoveVector();
+  if (player.isPouncing) {
+    const adx = ai.x - player.x, ady = ai.y - player.y;
+    const am = Math.hypot(adx, ady) || 1;
+    ix = adx / am; iy = ady / am;
+  }
+  if (ix !== 0 || iy !== 0) player.step(ix, iy, dt);
+  else {
+    player.moveX *= 0.85; player.moveY *= 0.85;
+  }
+  if (pouncePressed) {
+    pouncePressed = false;
+    if (player.pounceReady) player.tryPounce();
+  }
+
+  ai.updateAI(player, dt);
+
+  // --- FOOD: spawn + pickup ---
+  const fNow = performance.now();
+  if (!state.food && !state.foodEater && state.foodSpawnAt && fNow >= state.foodSpawnAt) {
+    state.food = pickFoodSpot(player, ai);
+  }
+  if (state.food) {
+    for (const cat of [player, ai]) {
+      if (Math.hypot(cat.x - state.food.x, cat.y - state.food.y) < FOOD.pickupRadius) {
+        cat.boostUntil  = fNow + FOOD.boostMs;
+        state.foodEater = cat.kind;
+        spawnPuff(state.food.x, state.food.y, 14, '#ffd23a');
+        spawnMeow(cat.x, cat.y - 6, 'Nom!');
+        playMeow({ pitch: 640, volume: 0.14, duration: 0.3 });
+        state.food = null;
+        break;
+      }
+    }
+  }
+
+  // --- Catch detection ---
+  const chaser = player.role === 'chaser' ? player : ai;
+  const runner = player.role === 'chaser' ? ai : player;
+  const dx = chaser.x - runner.x, dy = chaser.y - runner.y;
+  const catDist = Math.hypot(dx, dy);
+
+  const nowMs = performance.now();
+  if (catDist < 180 && nowMs - lastProximityMeow > 1100) {
+    lastProximityMeow = nowMs;
+    const urgency = 1 - catDist / 180;
+    const pitch  = 320 + Math.random() * 180 + urgency*80;
+    const vol    = 0.09 + urgency * 0.08;
+    playMeow({ pitch, volume: vol, duration: 0.35 });
+  }
+
+  if (catDist < CATCH_RADIUS) {
+    spawnPuff(runner.x, runner.y, 24, '#ffd080');
+    spawnMeow(chaser.x, chaser.y - 6, 'Meow!');
+    playMeow({ pitch: 520, volume: 0.18, duration: 0.45 });
+    setTimeout(() => playMeow({ pitch: 420, volume: 0.15, duration: 0.4 }), 140);
+    setTimeout(() => playMeow({ pitch: 340, volume: 0.14, duration: 0.5 }), 320);
+    endRound(chaser.kind);
+    return;
+  }
+
+  const timeLeft = ROUND_TIME - (performance.now() - state.roundStart);
+  if (timeLeft <= 0) {
+    spawnPuff(runner.x, runner.y, 18, '#88ff88');
+    endRound(runner.kind);
+  }
+}
+
+function updateHUD(now) {
+  document.getElementById('score-ehun').textContent     = `Ehun: ${state.scores.ehun}`;
+  document.getElementById('score-shantanu').textContent = `Shantanu: ${state.scores.shantanu}`;
+
+  if (state.mode === 'menu') {
+    document.getElementById('round-info').textContent = '—';
+    document.getElementById('timer').textContent = '—';
+    document.getElementById('cooldown').textContent = 'Pounce: —';
+    document.getElementById('cooldown').className = 'pill';
+    return;
+  }
+
+  let roundText = `Round ${state.round}`;
+  if (state.round > 0) {
+    const chaserName = CAT_STATS[state.playerChasing ? state.playerKind : state.aiKind].displayName;
+    roundText += ` · ${chaserName} is IT`;
+  }
+  document.getElementById('round-info').textContent = roundText;
+
+  let timeLeft = 0;
+  if (state.mode === 'playing') timeLeft = Math.max(0, ROUND_TIME - (now - state.roundStart));
+  else if (state.mode === 'countdown' || state.mode === 'ready') timeLeft = ROUND_TIME;
+  else timeLeft = 0;
+  const timerEl = document.getElementById('timer');
+  timerEl.textContent = (timeLeft/1000).toFixed(1) + 's';
+  timerEl.className = 'pill' + (timeLeft < 5000 && state.mode === 'playing' ? ' warn' : '');
+
+  const player = cats[state.playerKind];
+  if (player) {
+    const left = player.pounceCooldownUntil - now;
+    const cd = document.getElementById('cooldown');
+    if (left <= 0) {
+      cd.textContent = 'Pounce: READY (Space)';
+      cd.className = 'pill ready';
+    } else {
+      cd.textContent = `Pounce: ${(left/1000).toFixed(1)}s`;
+      cd.className = 'pill warn';
+    }
+  }
+}
+
+/* ============================================================
+ * AVATAR thumbnails on start panel
+ * ============================================================ */
+function drawAvatar(canvasEl, kind) {
+  const c = canvasEl.getContext('2d');
+  const cat = new Cat(kind);
+  cat.x = 35; cat.y = 38;
+  cat.facing = -0.35;
+  cat.moveX = 1; cat.moveY = 0;
+  c.save();
+  const scale = 1.55;
+  c.translate(cat.x, cat.y);
+  c.scale(scale, scale);
+  c.translate(-cat.x, -cat.y);
+  cat.draw(c, {noLabel: true});
+  c.restore();
+}
+
+/* ============================================================
+ * BOOT
+ * ============================================================ */
+function init() {
+  drawAvatar(document.getElementById('avatar-ehun'),     'ehun');
+  drawAvatar(document.getElementById('avatar-shantanu'), 'shantanu');
+
+  showOverlayFor('menu');
+  updateHUD(performance.now());
+
+  requestAnimationFrame(loop);
+}
+init();
+
+</script>
+</body>
+</html>
