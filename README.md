@@ -108,3 +108,4 @@ tsconfig.json
 - Shared buckets (data model is ready — `Place.bucketIds` exists — but no UI)
 - Instagram / TikTok scraping (source-URL parse is best-effort; the real entry flow bypasses it entirely)
 - Google Maps Takeout import — planned "Imported" tab that ingests your Google Takeout export, stores each pin as metadata + Maps link (no API cost), and promotes individual pins into the bucket via the existing add flow.
+- Share a city list — planned "Share" action that packs a city's places (title, category, address, coords, notes, Maps link — no photo URLs) into a compressed string for the native share sheet. Recipients paste it to see a read-only "Shared list" and cherry-pick into their own bucket. Plain-text fallback for people without the app.
