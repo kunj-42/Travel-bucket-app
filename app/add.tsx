@@ -28,8 +28,9 @@ import {
   getPlaceDetails,
   hasApiKey,
   photoUrl,
+  searchText,
 } from '@/lib/placesApi';
-import { parseUrl } from '@/lib/parseUrl';
+import { parseLink, parseUrl, type LinkDomain } from '@/lib/parseUrl';
 import type { AutocompletePrediction } from '@/lib/placesApi';
 import { CATEGORIES, type Category, type PickedCity } from '@/lib/types';
 
