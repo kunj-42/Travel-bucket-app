@@ -13,7 +13,7 @@ import { colors } from '@/theme/colors';
 import { type } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import { usePlaces } from '@/lib/store';
-import { hasAnthropicKey } from '@/lib/anthropic';
+import { hasGeminiKey } from '@/lib/gemini';
 import {
   MIN_ITEMS_FOR_SUGGESTIONS,
   canGenerate,
@@ -38,7 +38,7 @@ export default function Suggestions() {
 
   const unlocked = canGenerate(places.length);
   const currentKey = savedSetKey(places);
-  const apiAvailable = hasAnthropicKey();
+  const apiAvailable = hasGeminiKey();
 
   const load = useCallback(
     async (force = false) => {
@@ -169,10 +169,10 @@ function MissingKeyState() {
     <View style={styles.block}>
       <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Missing key</Text>
       <Text style={[type.body, { color: colors.text }]}>
-        Add an Anthropic API key to <Text style={{ fontStyle: 'italic' }}>.env</Text>{' '}
-        (EXPO_PUBLIC_ANTHROPIC_API_KEY) and restart the app with{' '}
-        <Text style={{ fontStyle: 'italic' }}>npx expo start -c</Text>. See the
-        README.
+        Add a Gemini API key (free at aistudio.google.com) to{' '}
+        <Text style={{ fontStyle: 'italic' }}>.env</Text>{' '}
+        (EXPO_PUBLIC_GEMINI_API_KEY) and restart with{' '}
+        <Text style={{ fontStyle: 'italic' }}>npx expo start -c</Text>.
       </Text>
     </View>
   );

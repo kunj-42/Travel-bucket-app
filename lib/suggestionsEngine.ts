@@ -1,5 +1,5 @@
 import type { Category, Place } from './types';
-import { claudeJson, hasAnthropicKey } from './anthropic';
+import { geminiJson, hasGeminiKey } from './gemini';
 
 export interface Suggestion {
   title: string;
@@ -52,8 +52,8 @@ const VALID_CATEGORIES: Category[] = ['Stay', 'Eat', 'Do', 'See'];
  * error state instead of silently returning nothing.
  */
 export async function generateSuggestions(saved: Place[]): Promise<Suggestion[]> {
-  if (!hasAnthropicKey()) throw new Error('Anthropic API key not configured');
-  const resp = await claudeJson<{ suggestions: Suggestion[] }>(
+  if (!hasGeminiKey()) throw new Error('Gemini API key not configured');
+  const resp = await geminiJson<{ suggestions: Suggestion[] }>(
     SYSTEM_PROMPT,
     formatSaved(saved),
   );
