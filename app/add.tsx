@@ -129,6 +129,79 @@ export default function AddPlace() {
     return () => clearTimeout(id);
   }, [addCityQuery, addingCity, apiAvailable]);
 
+  const onPasteLink = async () => {
+    const u = linkUrl.trim();
+    if (!u || linkProcessing) return;
+    setLinkProcessing(true);
+    setLinkNote(null);
+    try {
+      const res = await parseLink(u);
+
+      // Instagram / TikTok: rejected scrape, but we still keep the URL so the
+      // user can tap back to it from the place detail.
+      if (res.rejected) {
+        setPrefill({ sourceUrl: res.sourceUrl, domain: res.domain });
+        setLinkNote(
+          res.domain === 'instagram'
+            ? "Instagram doesn't share its data. Pick a city and search for the place — the link is saved."
+            : "TikTok doesn't share its data. Pick a city and search for the place — the link is saved.",
+        );
+        setPastingLink(false);
+        setLinkUrl('');
+        return;
+      }
+
+      // Google Maps share link: try to upgrade to a full Places match so we
+      // get a photo, address and the right place_id for the deep link.
+      if (res.domain === 'google-maps' && res.title) {
+        const match = await searchText(res.title, res.coordinates);
+        if (match) {
+          const { city: c, country } = cityFromAddress(match.address);
+          setSelected({
+            title: match.name || res.title,
+            category: categoryFromTypes(match.types),
+            city: c,
+            country,
+            address: match.address,
+            coordinates: match.coordinates ?? res.coordinates,
+            thumbnailUrl: match.photoName ? photoUrl(match.photoName, 1600) : res.thumbnailUrl,
+            googlePlaceId: match.placeId,
+          });
+          setSourceUrl(res.sourceUrl);
+          setPastingLink(false);
+          setLinkUrl('');
+          setStep('details');
+          return;
+        }
+      }
+
+      // Airbnb / generic: we have a title and/or photo. Stash the prefill so
+      // the City + Place + Details steps can use it. User still picks a city.
+      const hasAnything = res.title || res.thumbnailUrl;
+      if (hasAnything) {
+        setPrefill({
+          title: res.title,
+          thumbnailUrl: res.thumbnailUrl,
+          sourceUrl: res.sourceUrl,
+          domain: res.domain,
+          suggestedCategory: res.suggestedCategory,
+        });
+        setLinkNote(
+          res.domain === 'airbnb'
+            ? 'Got the listing details. Pick a city to continue.'
+            : 'Got what we could from the link. Pick a city to continue.',
+        );
+        setPastingLink(false);
+        setLinkUrl('');
+        return;
+      }
+
+      setLinkNote("Couldn't read this link. You can still add it manually.");
+    } finally {
+      setLinkProcessing(false);
+    }
+  };
+
   const pickCity = (c: PickedCity) => {
     setCity(c);
     setStep('place');
