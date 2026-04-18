@@ -126,7 +126,18 @@ export default function AddPlace() {
           coordinates: d?.coordinates,
         });
       }
-      if (s === citySeq.current) setAddCityHits(mapped);
+      if (s === citySeq.current) {
+        // Dedupe by name|country so the list has unique keys even when
+        // Google returns two cities that collapse to the same label.
+        const seen = new Set<string>();
+        const unique = mapped.filter((c) => {
+          const k = `${c.name}|${c.country}`;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        setAddCityHits(unique);
+      }
     }, 280);
     return () => clearTimeout(id);
   }, [addCityQuery, addingCity, apiAvailable]);

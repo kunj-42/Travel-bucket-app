@@ -84,8 +84,18 @@ export default function Onboarding() {
   }, [query]);
 
   const rows = useMemo(() => {
-    if (query.trim().length >= 2) return searchHits;
-    return CITY_SUGGESTIONS;
+    const source = query.trim().length >= 2 ? searchHits : CITY_SUGGESTIONS;
+    // Google occasionally returns two cities that collapse to the same
+    // name|country key (e.g. Amsterdam, NY and Amsterdam, OH both render as
+    // "Amsterdam, USA"). Keep the first of each key so FlatList keys stay
+    // unique.
+    const seen = new Set<string>();
+    return source.filter((c) => {
+      const k = keyOf(c);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
   }, [query, searchHits]);
 
   return (
