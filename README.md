@@ -100,12 +100,8 @@ tsconfig.json
 - The Google Places API is called every time you search for a place. Google gives $200/month free credit; personal-scale usage is pennies. Set a budget alert in Cloud Console for safety.
 - Your API key is embedded in the app bundle for development. If you ever publish the app, put the key behind a backend proxy or use a referrer restriction.
 
-## Out of scope for v1
+## What's next
 
-- Auth, accounts, sync
-- Push notifications
-- Booking integrations
-- Shared buckets (data model is ready — `Place.bucketIds` exists — but no UI)
-- Instagram / TikTok scraping (source-URL parse is best-effort; the real entry flow bypasses it entirely)
-- Google Maps Takeout import — planned "Imported" tab that ingests your Google Takeout export, stores each pin as metadata + Maps link (no API cost), and promotes individual pins into the bucket via the existing add flow.
-- Share a city list — planned "Share" action that packs a city's places (title, category, address, coords, notes, Maps link — no photo URLs) into a compressed string for the native share sheet. Recipients paste it to see a read-only "Shared list" and cherry-pick into their own bucket. Plain-text fallback for people without the app.
+See [`ROADMAP.md`](./ROADMAP.md) — "The Shelf." All parked features and wishlist
+items live there. Three major parked items right now: taste-based suggestions,
+Google Maps Takeout import, and city-list sharing.
