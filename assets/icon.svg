@@ -1,24 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Source for the app icon. Editorial mark: serif "B" on cream, hairline border.
-  Matches the app's Kinfolk/Cereal aesthetic.
-
-  App stores require PNG. To produce the 1024x1024 PNG that goes at
-  `assets/icon.png`, open this SVG in Figma / Sketch / Inkscape and export
-  at 1024x1024, OR use a command-line tool:
-      rsvg-convert -w 1024 -h 1024 assets/icon.svg -o assets/icon.png
-
-  If you don't have rsvg-convert: `brew install librsvg` on macOS.
--->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect width="1024" height="1024" fill="#FBF9F4"/>
-  <rect x="72" y="72" width="880" height="880"
-        fill="none" stroke="#1A1A1A" stroke-width="2"/>
-  <text x="512" y="660"
-        font-family="Fraunces, 'Times New Roman', Georgia, serif"
-        font-size="640"
-        font-weight="400"
-        text-anchor="middle"
-        fill="#1A1A1A"
-        letter-spacing="-20">B</text>
+<svg width="1024" height="1024" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#E9EFEC"/>
+  <circle cx="50" cy="50" r="48" stroke="#16423C" stroke-width="0.5" opacity="0.1" />
+  <path d="M50 5 L64 50 L50 48 L36 50 Z" fill="#16423C" />
+  <path d="M50 95 L36 50 L50 52 L64 50 Z" fill="#16423C" opacity="0.3" />
+  <path d="M50 20 V30 M50 70 V80 M20 50 H30 M70 50 H80" stroke="#16423C" stroke-width="1" stroke-linecap="round" opacity="0.2" />
+  <circle cx="50" cy="50" r="4" fill="#E9EFEC" stroke="#16423C" stroke-width="2" />
 </svg>

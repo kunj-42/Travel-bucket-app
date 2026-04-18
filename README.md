@@ -6,7 +6,7 @@ Built with **React Native + Expo (managed)**, **Expo Router**, **TypeScript**, *
 
 ## Design
 
-- Cream `#FBF9F4` page, charcoal `#1A1A1A` type, one accent: muted terracotta `#B4552D`.
+- Pale mint `#E9EFEC` page, deep forest green `#16423C` type, one warm accent: muted terracotta `#B4552D`.
 - Fraunces for display & titles, Inter for UI & body.
 - Hairlines only, 1px borders, no shadows or gradients.
 - Full-bleed imagery, small-caps tracked-out category labels, generous whitespace.
