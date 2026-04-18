@@ -32,6 +32,11 @@ export interface Place {
   // Reserved for future shared-bucket support. V1 places all sit in the
   // default personal bucket.
   bucketIds: string[];
+  // Visited state — set when the user taps "Mark as visited" on the detail
+  // screen. `visitNote` is the share-eligible tip shown post-visit.
+  visited?: boolean;
+  visitedAt?: number;
+  visitNote?: string;
 }
 
 export interface PickedCity {

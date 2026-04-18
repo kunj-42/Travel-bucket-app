@@ -75,6 +75,50 @@ export async function deletePlace(id: string): Promise<void> {
   await savePlaces(all.filter((p) => p.id !== id));
 }
 
+/**
+ * Flip the visited flag on a place and (optionally) update the share-note.
+ * Clearing visited also clears the note, since the note is the post-visit
+ * artefact — a place can't have a tip you'd share if you haven't been.
+ */
+export async function setVisited(
+  id: string,
+  visited: boolean,
+  visitNote?: string,
+): Promise<Place | undefined> {
+  const all = await loadPlaces();
+  const idx = all.findIndex((p) => p.id === id);
+  if (idx < 0) return undefined;
+  const prev = all[idx];
+  const next: Place = {
+    ...prev,
+    visited,
+    visitedAt: visited ? (prev.visitedAt ?? Date.now()) : undefined,
+    visitNote: visited ? (visitNote ?? prev.visitNote) : undefined,
+    updatedAt: Date.now(),
+  };
+  const copy = all.slice();
+  copy[idx] = next;
+  await savePlaces(copy);
+  return next;
+}
+
+export async function setVisitNote(id: string, note: string): Promise<Place | undefined> {
+  const all = await loadPlaces();
+  const idx = all.findIndex((p) => p.id === id);
+  if (idx < 0) return undefined;
+  const prev = all[idx];
+  if (!prev.visited) return prev;
+  const next: Place = {
+    ...prev,
+    visitNote: note.trim() || undefined,
+    updatedAt: Date.now(),
+  };
+  const copy = all.slice();
+  copy[idx] = next;
+  await savePlaces(copy);
+  return next;
+}
+
 export function collectCities(places: Place[]): string[] {
   const set = new Set<string>();
   for (const p of places) set.add(p.city);

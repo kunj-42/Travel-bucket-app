@@ -6,6 +6,8 @@ import {
   createPlace,
   deletePlace,
   listPlaces,
+  setVisited,
+  setVisitNote,
   type NewPlaceInput,
 } from './places';
 import {
@@ -25,6 +27,8 @@ interface StoreValue {
   tags: string[];
   add: (input: NewPlaceInput) => Promise<Place>;
   remove: (id: string) => Promise<void>;
+  markVisited: (id: string, visited: boolean, visitNote?: string) => Promise<void>;
+  updateVisitNote: (id: string, note: string) => Promise<void>;
   setPickedCities: (cities: PickedCity[]) => Promise<void>;
   finishOnboarding: (cities: PickedCity[]) => Promise<void>;
   reset: () => Promise<void>;
@@ -74,6 +78,22 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
     [refresh],
   );
 
+  const markVisited = useCallback(
+    async (id: string, visited: boolean, visitNote?: string) => {
+      await setVisited(id, visited, visitNote);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const updateVisitNote = useCallback(
+    async (id: string, note: string) => {
+      await setVisitNote(id, note);
+      await refresh();
+    },
+    [refresh],
+  );
+
   const setPickedCities = useCallback(
     async (cities: PickedCity[]) => {
       await saveCities(cities);
@@ -109,12 +129,14 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
       tags: collectTags(places),
       add,
       remove,
+      markVisited,
+      updateVisitNote,
       setPickedCities,
       finishOnboarding,
       reset,
       refresh,
     }),
-    [places, pickedCities, onboarded, loading, add, remove, setPickedCities, finishOnboarding, reset, refresh],
+    [places, pickedCities, onboarded, loading, add, remove, markVisited, updateVisitNote, setPickedCities, finishOnboarding, reset, refresh],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
