@@ -1,38 +1,27 @@
-import type { Category, Place } from './types';
+import type { Place } from './types';
+import { generateSuggestions, type Suggestion } from './suggestionsEngine';
 
-export interface SuggestionReason {
-  city?: string;
-  category?: Category;
-  sharedTags: string[];
-}
+export const MIN_ITEMS_FOR_SUGGESTIONS = 10;
+export const MAX_SUGGESTIONS = 5;
 
-export interface Suggestion {
-  place: Place;
-  score: number;
-  reason: SuggestionReason;
+export type { Suggestion };
+
+export function canGenerate(savedCount: number): boolean {
+  return savedCount >= MIN_ITEMS_FOR_SUGGESTIONS;
 }
 
 /**
- * Pure, deterministic recommender scaffold. Returns ranked candidates from
- * an external pool based on the user's saved list (city + tag + category
- * overlap).
- *
- * V2 swap: the candidate pool will come from a Google Places-backed retrieval
- * (or an LLM-driven "you'd also like" generator). For now the pool is empty
- * until we wire that integration, so this function returns nothing and the
- * Suggestions tab renders a helpful empty state.
- *
- * TODO(llm): feed `saved` + `pickedCities` into a retrieval call that returns
- * a candidate array, then reuse the scoring below.
+ * Stable key derived from the saved-set. Changes when the user adds or
+ * removes an item, so the cache self-invalidates organically.
  */
-export function suggestPlaces(_saved: Place[], _limit = 10): Suggestion[] {
-  return [];
+export function savedSetKey(saved: Place[]): string {
+  return saved
+    .map((p) => p.id)
+    .sort()
+    .join(',');
 }
 
-export function describeReason(reason: SuggestionReason): string {
-  const bits: string[] = [];
-  if (reason.city) bits.push(`More from ${reason.city}`);
-  if (reason.sharedTags.length) bits.push(reason.sharedTags.slice(0, 2).join(' · '));
-  else if (reason.category) bits.push(`Another ${reason.category.toLowerCase()} spot`);
-  return bits.join(' — ');
+export async function fetchSuggestions(saved: Place[]): Promise<Suggestion[]> {
+  if (!canGenerate(saved.length)) return [];
+  return generateSuggestions(saved);
 }
