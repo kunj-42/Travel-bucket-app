@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { PickedCity, Place } from './types';
+import type { Suggestion } from './suggestionsEngine';
 
 const PLACES_KEY = 'bucket.places.v2';
 const CITIES_KEY = 'bucket.cities.v2';
 const ONBOARDED_KEY = 'bucket.onboarded.v2';
+const SUGGESTIONS_KEY = 'bucket.suggestions.v1';
 
 export async function loadPlaces(): Promise<Place[]> {
   const raw = await AsyncStorage.getItem(PLACES_KEY);
@@ -43,5 +45,29 @@ export async function markOnboarded(): Promise<void> {
 }
 
 export async function resetEverything(): Promise<void> {
-  await AsyncStorage.multiRemove([PLACES_KEY, CITIES_KEY, ONBOARDED_KEY]);
+  await AsyncStorage.multiRemove([PLACES_KEY, CITIES_KEY, ONBOARDED_KEY, SUGGESTIONS_KEY]);
+}
+
+interface SuggestionsCache {
+  key: string;
+  suggestions: Suggestion[];
+  updatedAt: number;
+}
+
+export async function loadSuggestionsCache(): Promise<SuggestionsCache | null> {
+  const raw = await AsyncStorage.getItem(SUGGESTIONS_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SuggestionsCache;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSuggestionsCache(cache: SuggestionsCache): Promise<void> {
+  await AsyncStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(cache));
+}
+
+export async function clearSuggestionsCache(): Promise<void> {
+  await AsyncStorage.removeItem(SUGGESTIONS_KEY);
 }
