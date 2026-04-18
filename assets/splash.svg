@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Source for the splash screen. Centered serif wordmark on cream. Stays on
+  screen for ~1 second while the app boots.
+
+  Export to `assets/splash.png` at 1284x2778 (iPhone Pro Max size; Expo
+  handles device-specific resizing from there).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1284 2778">
+  <rect width="1284" height="2778" fill="#FBF9F4"/>
+  <text x="642" y="1389"
+        font-family="Fraunces, 'Times New Roman', Georgia, serif"
+        font-size="180"
+        font-weight="400"
+        text-anchor="middle"
+        fill="#1A1A1A"
+        letter-spacing="-4">Bucket</text>
+  <line x1="606" y1="1440" x2="678" y2="1440"
+        stroke="#1A1A1A" stroke-width="2"/>
+  <text x="642" y="1520"
+        font-family="Inter, -apple-system, system-ui, sans-serif"
+        font-size="32"
+        font-weight="500"
+        text-anchor="middle"
+        fill="#8A8A8A"
+        letter-spacing="4">A QUIET SHELF FOR PLACES</text>
+</svg>

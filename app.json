@@ -7,16 +7,36 @@
     "scheme": "bucket",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FBF9F4"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bucket.app"
+      "bundleIdentifier": "com.kunjbhujwala.bucket",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.bucket.app"
+      "package": "com.kunjbhujwala.bucket",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FBF9F4"
+      }
     },
     "plugins": ["expo-router", "expo-font"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_AFTER_FIRST_EAS_BUILD"
+      }
     }
   }
 }

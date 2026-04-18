@@ -100,6 +100,12 @@ tsconfig.json
 - The Google Places API is called every time you search for a place. Google gives $200/month free credit; personal-scale usage is pennies. Set a budget alert in Cloud Console for safety.
 - Your API key is embedded in the app bundle for development. If you ever publish the app, put the key behind a backend proxy or use a referrer restriction.
 
+## Shipping
+
+See [`SHIP.md`](./SHIP.md) for the full step-by-step TestFlight + Google Play
+Internal Testing walkthrough. Source assets for the icon + splash are in
+`assets/` as SVG; convert to PNG before building.
+
 ## What's next
 
 See [`ROADMAP.md`](./ROADMAP.md) — "The Shelf." All parked features and wishlist
