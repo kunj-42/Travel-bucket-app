@@ -107,3 +107,4 @@ tsconfig.json
 - Booking integrations
 - Shared buckets (data model is ready — `Place.bucketIds` exists — but no UI)
 - Instagram / TikTok scraping (source-URL parse is best-effort; the real entry flow bypasses it entirely)
+- Google Maps Takeout import — planned "Imported" tab that ingests your Google Takeout export, stores each pin as metadata + Maps link (no API cost), and promotes individual pins into the bucket via the existing add flow.
