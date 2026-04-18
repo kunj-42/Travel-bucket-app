@@ -46,14 +46,21 @@ function formatSaved(saved: Place[]): string {
 
 const VALID_CATEGORIES: Category[] = ['Stay', 'Eat', 'Do', 'See'];
 
+function normalizeCategory(raw: unknown): Category | null {
+  if (typeof raw !== 'string') return null;
+  const lower = raw.trim().toLowerCase();
+  const match = VALID_CATEGORIES.find((c) => c.toLowerCase() === lower);
+  return match ?? null;
+}
+
 /**
- * Ask Claude Haiku for 5 taste-matched suggestions based on the user's saved
+ * Ask Gemini Flash for 5 taste-matched suggestions based on the user's saved
  * list. Throws on network / parse / auth errors so the caller can show an
  * error state instead of silently returning nothing.
  */
 export async function generateSuggestions(saved: Place[]): Promise<Suggestion[]> {
   if (!hasGeminiKey()) throw new Error('Gemini API key not configured');
-  const resp = await geminiJson<{ suggestions: Suggestion[] }>(
+  const resp = await geminiJson<{ suggestions: Array<Record<string, unknown>> }>(
     SYSTEM_PROMPT,
     formatSaved(saved),
   );
@@ -62,8 +69,17 @@ export async function generateSuggestions(saved: Place[]): Promise<Suggestion[]>
     saved.map((p) => `${p.title.toLowerCase()}|${p.city.toLowerCase()}`),
   );
 
-  return (resp.suggestions ?? [])
-    .filter((s) => s && s.title && s.city && VALID_CATEGORIES.includes(s.category))
-    .filter((s) => !savedKeys.has(`${s.title.toLowerCase()}|${s.city.toLowerCase()}`))
-    .slice(0, 5);
+  const cleaned: Suggestion[] = [];
+  for (const raw of resp.suggestions ?? []) {
+    const title = typeof raw.title === 'string' ? raw.title.trim() : '';
+    const city = typeof raw.city === 'string' ? raw.city.trim() : '';
+    const country = typeof raw.country === 'string' ? raw.country.trim() : '';
+    const reason = typeof raw.reason === 'string' ? raw.reason.trim() : '';
+    const category = normalizeCategory(raw.category);
+    if (!title || !city || !category) continue;
+    if (savedKeys.has(`${title.toLowerCase()}|${city.toLowerCase()}`)) continue;
+    cleaned.push({ title, category, city, country, reason });
+    if (cleaned.length >= 5) break;
+  }
+  return cleaned;
 }

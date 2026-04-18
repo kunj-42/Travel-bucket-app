@@ -109,12 +109,12 @@ export default function Suggestions() {
         <LockedState count={places.length} />
       ) : !apiAvailable ? (
         <MissingKeyState />
-      ) : status === 'loading' && suggestions.length === 0 ? (
-        <LoadingState />
       ) : status === 'error' ? (
         <ErrorState message={errorMsg} onRetry={() => load(true)} />
       ) : suggestions.length > 0 ? (
         <SuggestionsList items={suggestions} />
+      ) : status === 'ready' ? (
+        <EmptyState onRetry={() => load(true)} />
       ) : (
         <LoadingState />
       )}
@@ -183,6 +183,21 @@ function LoadingState() {
     <View style={[styles.block, { alignItems: 'center', paddingTop: spacing.xxl }]}>
       <ActivityIndicator color={colors.textMuted} />
       <Text style={[type.meta, { marginTop: spacing.md }]}>Reading your list…</Text>
+    </View>
+  );
+}
+
+function EmptyState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View style={styles.block}>
+      <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Nothing came back</Text>
+      <Text style={[type.body, { color: colors.text, marginBottom: spacing.lg }]}>
+        The engine ran but returned no usable suggestions. This usually clears on a
+        retry — or add another item and it'll regenerate.
+      </Text>
+      <Pressable onPress={onRetry}>
+        <Text style={[type.label, { color: colors.accent }]}>Try again</Text>
+      </Pressable>
     </View>
   );
 }
