@@ -330,6 +330,26 @@ export default function AddPlace() {
           addCityHits={addCityHits}
           onAddCityPick={addAndPickCity}
           apiAvailable={apiAvailable}
+          pastingLink={pastingLink}
+          onBeginPasteLink={() => {
+            setPastingLink(true);
+            setLinkNote(null);
+          }}
+          onCancelPasteLink={() => {
+            setPastingLink(false);
+            setLinkUrl('');
+          }}
+          linkUrl={linkUrl}
+          onLinkUrlChange={setLinkUrl}
+          linkProcessing={linkProcessing}
+          linkNote={linkNote}
+          onClearLinkNote={() => setLinkNote(null)}
+          onSubmitLink={onPasteLink}
+          prefill={prefill}
+          onClearPrefill={() => {
+            setPrefill(null);
+            setSourceUrl('');
+          }}
         />
       ) : null}
 
@@ -439,6 +459,35 @@ export default function AddPlace() {
   );
 }
 
+interface CityStepProps {
+  cities: PickedCity[];
+  onPick: (c: PickedCity) => void;
+  addingCity: boolean;
+  onBeginAddCity: () => void;
+  onCancelAddCity: () => void;
+  addCityQuery: string;
+  onAddCityQueryChange: (v: string) => void;
+  addCityHits: PickedCity[];
+  onAddCityPick: (c: PickedCity) => void;
+  apiAvailable: boolean;
+  pastingLink: boolean;
+  onBeginPasteLink: () => void;
+  onCancelPasteLink: () => void;
+  linkUrl: string;
+  onLinkUrlChange: (v: string) => void;
+  linkProcessing: boolean;
+  linkNote: string | null;
+  onClearLinkNote: () => void;
+  onSubmitLink: () => void;
+  prefill: {
+    title?: string;
+    thumbnailUrl?: string;
+    sourceUrl?: string;
+    domain?: LinkDomain;
+  } | null;
+  onClearPrefill: () => void;
+}
+
 function CityStep({
   cities,
   onPick,
@@ -450,18 +499,18 @@ function CityStep({
   addCityHits,
   onAddCityPick,
   apiAvailable,
-}: {
-  cities: PickedCity[];
-  onPick: (c: PickedCity) => void;
-  addingCity: boolean;
-  onBeginAddCity: () => void;
-  onCancelAddCity: () => void;
-  addCityQuery: string;
-  onAddCityQueryChange: (v: string) => void;
-  addCityHits: PickedCity[];
-  onAddCityPick: (c: PickedCity) => void;
-  apiAvailable: boolean;
-}) {
+  pastingLink,
+  onBeginPasteLink,
+  onCancelPasteLink,
+  linkUrl,
+  onLinkUrlChange,
+  linkProcessing,
+  linkNote,
+  onClearLinkNote,
+  onSubmitLink,
+  prefill,
+  onClearPrefill,
+}: CityStepProps) {
   return (
     <ScrollView
       keyboardShouldPersistTaps="handled"
@@ -472,10 +521,81 @@ function CityStep({
         <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>New entry</Text>
         <Text style={type.display}>Which city?</Text>
         <Text style={[type.body, styles.subtitle]}>
-          Pick one of yours, or add a new city below.
+          Pick one of yours, or paste a link below.
         </Text>
         <View style={styles.rule} />
       </View>
+
+      {prefill && (prefill.title || prefill.thumbnailUrl) ? (
+        <View style={styles.prefillCard}>
+          {prefill.thumbnailUrl ? (
+            <Image source={{ uri: prefill.thumbnailUrl }} style={styles.prefillThumb} />
+          ) : null}
+          <View style={{ flex: 1 }}>
+            <Text style={[type.labelSoft, { marginBottom: spacing.xs }]}>
+              From the link · {prefill.domain ?? 'web'}
+            </Text>
+            {prefill.title ? (
+              <Text style={type.subtitle} numberOfLines={2}>
+                {prefill.title}
+              </Text>
+            ) : null}
+            <Pressable onPress={onClearPrefill} style={{ marginTop: spacing.sm }}>
+              <Text style={[type.labelSoft, { color: colors.accent }]}>Clear</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      {linkNote ? (
+        <Pressable onPress={onClearLinkNote} style={styles.linkNote}>
+          <Text style={[type.body, { color: colors.text }]}>{linkNote}</Text>
+          <Text style={[type.meta, { marginTop: spacing.xs, color: colors.accent }]}>
+            Tap to dismiss
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {pastingLink ? (
+        <View style={styles.linkPanel}>
+          <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Paste a link</Text>
+          <TextInput
+            value={linkUrl}
+            onChangeText={onLinkUrlChange}
+            placeholder="https://…"
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            autoFocus
+            style={styles.input}
+            onSubmitEditing={onSubmitLink}
+            returnKeyType="go"
+          />
+          <View style={styles.linkActions}>
+            <Pressable onPress={onCancelPasteLink}>
+              <Text style={[type.labelSoft, { color: colors.textMuted }]}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={onSubmitLink} disabled={linkProcessing || !linkUrl.trim()}>
+              <Text
+                style={[
+                  type.label,
+                  { color: linkProcessing || !linkUrl.trim() ? colors.textMuted : colors.accent },
+                ]}
+              >
+                {linkProcessing ? 'Reading…' : 'Read link'}
+              </Text>
+            </Pressable>
+          </View>
+          <Text style={[type.meta, { marginTop: spacing.md }]}>
+            Google Maps · Airbnb · restaurant sites · blogs. Instagram and TikTok aren't supported.
+          </Text>
+        </View>
+      ) : (
+        <Pressable onPress={onBeginPasteLink} style={styles.addCityBtn}>
+          <Text style={[type.label, { color: colors.accent }]}>＋ Add from a link</Text>
+        </Pressable>
+      )}
 
       {cities.map((c) => (
         <Pressable
@@ -698,6 +818,44 @@ const styles = StyleSheet.create({
   manualBtn: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
+  },
+  linkPanel: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+  },
+  linkActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  linkNote: {
+    marginHorizontal: spacing.xl,
+    marginVertical: spacing.md,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.background,
+  },
+  prefillCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.text,
+    backgroundColor: colors.surface,
+  },
+  prefillThumb: {
+    width: 64,
+    height: 64,
+    backgroundColor: colors.hairline,
   },
   hero: {
     width: '100%',
