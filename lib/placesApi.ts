@@ -145,6 +145,47 @@ export function photoUrl(photoName: string, maxHeight = 1200): string {
   return `${BASE}/${photoName}/media?maxHeightPx=${maxHeight}&key=${API_KEY}`;
 }
 
+export async function searchText(
+  query: string,
+  bias?: Coordinates,
+): Promise<PlaceDetails | null> {
+  if (!hasApiKey() || !query.trim()) return null;
+  const body: Record<string, unknown> = { textQuery: query };
+  if (bias) {
+    body.locationBias = { circle: { center: bias, radius: 20000 } };
+  }
+  const res = await fetch(`${BASE}/places:searchText`, {
+    method: 'POST',
+    headers: headers(
+      'places.id,places.displayName,places.formattedAddress,places.location,places.photos,places.types',
+    ),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    places?: Array<{
+      id: string;
+      displayName?: { text?: string };
+      formattedAddress?: string;
+      location?: { latitude: number; longitude: number };
+      photos?: Array<{ name: string }>;
+      types?: string[];
+    }>;
+  };
+  const first = json.places?.[0];
+  if (!first) return null;
+  return {
+    placeId: first.id,
+    name: first.displayName?.text ?? '',
+    address: first.formattedAddress ?? '',
+    coordinates: first.location
+      ? { latitude: first.location.latitude, longitude: first.location.longitude }
+      : undefined,
+    photoName: first.photos?.[0]?.name,
+    types: first.types ?? [],
+  };
+}
+
 // Rough mapping from Google Place types to our four categories.
 // Falls back to 'See' for landmarks / unknown.
 export function categoryFromTypes(types: string[]): Category {
