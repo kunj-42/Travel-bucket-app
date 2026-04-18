@@ -65,7 +65,7 @@ function Header({ count }: { count: number }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.header, { paddingTop: insets.top + spacing.xl }]}>
-      <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>The Bucket — {count} {count === 1 ? 'place' : 'places'}</Text>
+      <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>My travel list — {count} {count === 1 ? 'place' : 'places'}</Text>
       <Text style={type.display}>Places, kept.</Text>
       <Text style={[type.body, styles.subtitle]}>
         A quiet shelf for everywhere you want to go next. Add a link, open in Maps when it's time.
