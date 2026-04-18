@@ -6,6 +6,7 @@ import { spacing } from '@/theme/spacing';
 import type { Place } from '@/lib/types';
 import { CategoryLabel } from './CategoryLabel';
 import { PlaceImage } from './PlaceImage';
+import { VisitedStamp } from './VisitedStamp';
 
 type Layout = 'hero' | 'left' | 'right';
 
@@ -21,7 +22,10 @@ export function PlaceCard({ place, layout, onPress }: Props) {
   if (layout === 'hero') {
     return (
       <Pressable onPress={handle} style={({ pressed }) => [styles.hero, pressed && styles.pressed]}>
-        <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={4 / 5} />
+        <View>
+          <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={4 / 5} />
+          {place.visited ? <VisitedStamp style={styles.stampHero} /> : null}
+        </View>
         <View style={styles.heroMeta}>
           <CategoryLabel category={place.category} style={styles.heroCategory} />
           <Text style={[type.title, styles.heroTitle]} numberOfLines={2}>
@@ -47,6 +51,7 @@ export function PlaceCard({ place, layout, onPress }: Props) {
     >
       <View style={styles.imageCol}>
         <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={3 / 4} />
+        {place.visited ? <VisitedStamp size="sm" style={styles.stampRow} /> : null}
       </View>
       <View style={[styles.textCol, reverse ? styles.textColRight : styles.textColLeft]}>
         <CategoryLabel category={place.category} />
@@ -102,6 +107,16 @@ const styles = StyleSheet.create({
   rowTitle: {
     marginTop: spacing.md,
     marginBottom: spacing.sm,
+  },
+  stampHero: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+  },
+  stampRow: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
   },
 });
 
