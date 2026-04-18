@@ -123,8 +123,11 @@ async function parseAirbnb(url: string): Promise<ParsedLink> {
   const fetched = await fetchHtml(url);
   if (fetched?.html) {
     extractMeta(fetched.html, out);
-    if (out.title) {
-      const { city, country } = extractCityFromAirbnbTitle(out.title);
+    // Airbnb sometimes puts the city in og:title, other times only in
+    // og:description ("Entire home/apt in Lisbon, Portugal"). Try both.
+    const hay = [out.title, out.description].filter(Boolean).join(' · ');
+    if (hay) {
+      const { city, country } = extractCityFromAirbnbTitle(hay);
       if (city) out.city = city;
       if (country) out.country = country;
     }

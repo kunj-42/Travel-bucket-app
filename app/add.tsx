@@ -77,6 +77,8 @@ export default function AddPlace() {
     sourceUrl?: string;
     domain?: LinkDomain;
     suggestedCategory?: Category;
+    city?: string;
+    country?: string;
   } | null>(null);
 
   const seq = useRef(0);
@@ -176,7 +178,7 @@ export default function AddPlace() {
       }
 
       // Airbnb / generic: we have a title and/or photo. Stash the prefill so
-      // the City + Place + Details steps can use it. User still picks a city.
+      // the City + Place + Details steps can use it.
       const hasAnything = res.title || res.thumbnailUrl;
       if (hasAnything) {
         setPrefill({
@@ -185,11 +187,33 @@ export default function AddPlace() {
           sourceUrl: res.sourceUrl,
           domain: res.domain,
           suggestedCategory: res.suggestedCategory,
+          city: res.city,
+          country: res.country,
         });
+
+        // If the link told us a city, use it directly — add it to the user's
+        // cities if it's new, then jump to the place step with the title
+        // pre-filled. Saves the user from picking or typing.
+        if (res.city && res.country) {
+          const linkCity: PickedCity = { name: res.city, country: res.country };
+          const exists = pickedCities.some(
+            (p) =>
+              p.name.toLowerCase() === linkCity.name.toLowerCase() &&
+              p.country.toLowerCase() === linkCity.country.toLowerCase(),
+          );
+          if (!exists) await setPickedCities([...pickedCities, linkCity]);
+          setCity(linkCity);
+          if (res.title) setPlaceQuery(res.title);
+          setPastingLink(false);
+          setLinkUrl('');
+          setStep('place');
+          return;
+        }
+
         setLinkNote(
           res.domain === 'airbnb'
-            ? 'Got the listing details. Pick a city to continue.'
-            : 'Got what we could from the link. Pick a city to continue.',
+            ? "Got the listing, but we couldn't read the city — pick or add one below."
+            : 'Got what we could from the link. Pick or add a city below to continue.',
         );
         setPastingLink(false);
         setLinkUrl('');
