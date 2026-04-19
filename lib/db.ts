@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { PickedCity, Place } from './types';
+import type { ImportedPin, PickedCity, Place } from './types';
 import type { Suggestion } from './suggestionsEngine';
 
 const PLACES_KEY = 'bucket.places.v2';
 const CITIES_KEY = 'bucket.cities.v2';
 const ONBOARDED_KEY = 'bucket.onboarded.v2';
 const SUGGESTIONS_KEY = 'bucket.suggestions.v1';
+const IMPORTED_KEY = 'bucket.imported.v1';
 
 export async function loadPlaces(): Promise<Place[]> {
   const raw = await AsyncStorage.getItem(PLACES_KEY);
@@ -45,7 +46,31 @@ export async function markOnboarded(): Promise<void> {
 }
 
 export async function resetEverything(): Promise<void> {
-  await AsyncStorage.multiRemove([PLACES_KEY, CITIES_KEY, ONBOARDED_KEY, SUGGESTIONS_KEY]);
+  await AsyncStorage.multiRemove([
+    PLACES_KEY,
+    CITIES_KEY,
+    ONBOARDED_KEY,
+    SUGGESTIONS_KEY,
+    IMPORTED_KEY,
+  ]);
+}
+
+export async function loadImportedPins(): Promise<ImportedPin[]> {
+  const raw = await AsyncStorage.getItem(IMPORTED_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as ImportedPin[];
+  } catch {
+    return [];
+  }
+}
+
+export async function saveImportedPins(pins: ImportedPin[]): Promise<void> {
+  await AsyncStorage.setItem(IMPORTED_KEY, JSON.stringify(pins));
+}
+
+export async function clearImportedPins(): Promise<void> {
+  await AsyncStorage.removeItem(IMPORTED_KEY);
 }
 
 interface SuggestionsCache {

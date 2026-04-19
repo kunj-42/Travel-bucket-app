@@ -55,3 +55,23 @@ export interface Bucket {
 
 export const DEFAULT_BUCKET_ID = 'personal';
 export const DEFAULT_OWNER_ID = 'me';
+
+/**
+ * A pin imported from a Google Maps Takeout export. Stored separately from
+ * Place so the user can browse their full Google history without polluting
+ * the curated bucket. Promoting an imported pin runs it through the normal
+ * add flow, which creates a real Place record from this skeleton.
+ */
+export interface ImportedPin {
+  id: string;
+  title: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  coordinates?: Coordinates;
+  mapsUrl?: string;
+  note?: string;
+  sourceList?: string;
+  importedAt: number;
+  promoted?: boolean;
+}
