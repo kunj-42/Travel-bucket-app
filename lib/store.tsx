@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import type { PickedCity, Place } from './types';
+import type { ImportedPin, PickedCity, Place } from './types';
 import {
   collectCities,
   collectTags,
@@ -11,16 +11,21 @@ import {
   type NewPlaceInput,
 } from './places';
 import {
+  clearImportedPins,
   isOnboarded,
   loadCities,
+  loadImportedPins,
   markOnboarded,
   resetEverything,
   saveCities,
+  saveImportedPins,
 } from './db';
+import type { ParsedPin } from './takeout';
 
 interface StoreValue {
   places: Place[];
   pickedCities: PickedCity[];
+  importedPins: ImportedPin[];
   onboarded: boolean;
   loading: boolean;
   cities: string[];
@@ -31,26 +36,37 @@ interface StoreValue {
   updateVisitNote: (id: string, note: string) => Promise<void>;
   setPickedCities: (cities: PickedCity[]) => Promise<void>;
   finishOnboarding: (cities: PickedCity[]) => Promise<void>;
+  importPins: (pins: ParsedPin[]) => Promise<number>;
+  removeImportedPin: (id: string) => Promise<void>;
+  markPinPromoted: (id: string) => Promise<void>;
+  clearImported: () => Promise<void>;
   reset: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
 const Ctx = createContext<StoreValue | null>(null);
 
+function pinId(): string {
+  return `ip-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export function PlacesProvider({ children }: { children: React.ReactNode }) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [pickedCities, setPickedCitiesState] = useState<PickedCity[]>([]);
+  const [importedPins, setImportedPinsState] = useState<ImportedPin[]>([]);
   const [onboarded, setOnboarded] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [all, cities, done] = await Promise.all([
+    const [all, cities, pins, done] = await Promise.all([
       listPlaces(),
       loadCities(),
+      loadImportedPins(),
       isOnboarded(),
     ]);
     setPlaces(all);
     setPickedCitiesState(cities);
+    setImportedPinsState(pins);
     setOnboarded(done);
   }, []);
 
@@ -112,10 +128,64 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  /**
+   * Merge a freshly-parsed batch into the imported list. We dedupe on
+   * (title + city + mapsUrl) so re-importing the same Takeout file doesn't
+   * double up. Returns the count of pins actually added (new rows).
+   */
+  const importPins = useCallback(
+    async (pins: ParsedPin[]) => {
+      const current = await loadImportedPins();
+      const seen = new Set(
+        current.map((p) =>
+          `${p.title.toLowerCase()}|${(p.city ?? '').toLowerCase()}|${p.mapsUrl ?? ''}`,
+        ),
+      );
+      const now = Date.now();
+      const additions: ImportedPin[] = [];
+      for (const p of pins) {
+        const key = `${p.title.toLowerCase()}|${(p.city ?? '').toLowerCase()}|${p.mapsUrl ?? ''}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        additions.push({
+          id: pinId(),
+          importedAt: now,
+          ...p,
+        });
+      }
+      if (additions.length === 0) return 0;
+      const next = [...additions, ...current];
+      await saveImportedPins(next);
+      setImportedPinsState(next);
+      return additions.length;
+    },
+    [],
+  );
+
+  const removeImportedPin = useCallback(async (id: string) => {
+    const current = await loadImportedPins();
+    const next = current.filter((p) => p.id !== id);
+    await saveImportedPins(next);
+    setImportedPinsState(next);
+  }, []);
+
+  const markPinPromoted = useCallback(async (id: string) => {
+    const current = await loadImportedPins();
+    const next = current.map((p) => (p.id === id ? { ...p, promoted: true } : p));
+    await saveImportedPins(next);
+    setImportedPinsState(next);
+  }, []);
+
+  const clearImported = useCallback(async () => {
+    await clearImportedPins();
+    setImportedPinsState([]);
+  }, []);
+
   const reset = useCallback(async () => {
     await resetEverything();
     setPlaces([]);
     setPickedCitiesState([]);
+    setImportedPinsState([]);
     setOnboarded(false);
   }, []);
 
@@ -123,6 +193,7 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
     () => ({
       places,
       pickedCities,
+      importedPins,
       onboarded,
       loading,
       cities: collectCities(places),
@@ -133,10 +204,32 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
       updateVisitNote,
       setPickedCities,
       finishOnboarding,
+      importPins,
+      removeImportedPin,
+      markPinPromoted,
+      clearImported,
       reset,
       refresh,
     }),
-    [places, pickedCities, onboarded, loading, add, remove, markVisited, updateVisitNote, setPickedCities, finishOnboarding, reset, refresh],
+    [
+      places,
+      pickedCities,
+      importedPins,
+      onboarded,
+      loading,
+      add,
+      remove,
+      markVisited,
+      updateVisitNote,
+      setPickedCities,
+      finishOnboarding,
+      importPins,
+      removeImportedPin,
+      markPinPromoted,
+      clearImported,
+      reset,
+      refresh,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
