@@ -38,27 +38,7 @@ UX. Swap to an LLM later once we have a budget.
 
 ---
 
-### 2. Google Maps Takeout import
-
-An "Imported" tab that ingests a user's Google Takeout `Saved Places` export and
-stores each pin as metadata + Maps link — **zero Places API cost on import**.
-Tapping an imported pin opens the existing add flow pre-filled with the title +
-city, so promoting one into the real bucket uses the normal hydrate-with-photo
-path.
-
-**Shape:**
-- `expo-document-picker` for file pickup, parse the GeoJSON / CSV Takeout export.
-- New `Place.imported = true` flag or separate `ImportedPin` type.
-- New tab (or a section under Settings) listing imported pins with a "Promote to
-  bucket" action per row.
-
-**Why it's cheap:** Takeout already ships name, address, coordinates, and the
-Google Maps URL. No API calls at import; photos hydrate lazily only when the user
-promotes a pin.
-
----
-
-### 3. Share a city list
+### 2. Share a city list
 
 A "Share Lisbon" action that packs a city's places (title, category, address,
 coords, notes, Maps link — **no photo URLs**, since those carry the user's API key)

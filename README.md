@@ -109,5 +109,5 @@ Internal Testing walkthrough. Source assets for the icon + splash are in
 ## What's next
 
 See [`ROADMAP.md`](./ROADMAP.md) — "The Shelf." All parked features and wishlist
-items live there. Three major parked items right now: taste-based suggestions,
-Google Maps Takeout import, and city-list sharing.
+items live there. Two major parked items right now: taste-based suggestions and
+city-list sharing.

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { type } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
@@ -9,7 +10,7 @@ import { Button } from '@/components/Button';
 import { usePlaces } from '@/lib/store';
 
 export default function Settings() {
-  const { places, pickedCities, reset } = usePlaces();
+  const { places, pickedCities, importedPins, reset } = usePlaces();
   const insets = useSafeAreaInsets();
 
   const onReset = () => {
@@ -46,6 +47,18 @@ export default function Settings() {
       <Divider style={{ marginHorizontal: spacing.xl }} />
       <Row label="Bucket" value="Personal" />
       <Divider style={{ marginHorizontal: spacing.xl }} />
+
+      <Pressable onPress={() => router.push('/imported')} style={styles.action}>
+        <View style={{ flex: 1 }}>
+          <Text style={type.subtitle}>Import from Google Maps</Text>
+          <Text style={[type.meta, { marginTop: spacing.xs }]}>
+            {importedPins.length > 0
+              ? `${importedPins.length} pins on your shortlist`
+              : 'Bring your saved pins in as a shortlist.'}
+          </Text>
+        </View>
+        <Text style={styles.arrow}>→</Text>
+      </Pressable>
 
       <View style={styles.section}>
         <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Coming later</Text>
@@ -102,5 +115,18 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xxl,
+  },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.hairline,
+  },
+  arrow: {
+    fontSize: 18,
+    color: colors.textMuted,
+    paddingLeft: spacing.md,
   },
 });

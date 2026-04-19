@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { fonts, type } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
@@ -83,6 +83,54 @@ export default function AddPlace() {
 
   const seq = useRef(0);
   const citySeq = useRef(0);
+
+  // If we landed here from the Imported tab ("Add to bucket" on a pin), jump
+  // straight to the Details step with the pin's title, city, and coords
+  // pre-filled. The user confirms category/notes/tags and saves. If the city
+  // is new, we quietly add it to pickedCities so the Feed groups work.
+  const params = useLocalSearchParams<{
+    fromImport?: string;
+    title?: string;
+    city?: string;
+    country?: string;
+    lat?: string;
+    lng?: string;
+    sourceUrl?: string;
+  }>();
+  const importHandled = useRef(false);
+  useEffect(() => {
+    if (params.fromImport !== '1' || importHandled.current) return;
+    importHandled.current = true;
+    const title = params.title ?? '';
+    const cityName = params.city ?? '';
+    const countryName = params.country ?? '';
+    const lat = params.lat ? parseFloat(params.lat) : NaN;
+    const lng = params.lng ? parseFloat(params.lng) : NaN;
+    const coordinates =
+      Number.isFinite(lat) && Number.isFinite(lng)
+        ? { latitude: lat, longitude: lng }
+        : undefined;
+
+    if (cityName && countryName) {
+      const linkCity: PickedCity = { name: cityName, country: countryName, coordinates };
+      const exists = pickedCities.some(
+        (p) =>
+          p.name.toLowerCase() === linkCity.name.toLowerCase() &&
+          p.country.toLowerCase() === linkCity.country.toLowerCase(),
+      );
+      if (!exists) void setPickedCities([...pickedCities, linkCity]);
+      setCity(linkCity);
+    }
+    setSelected({
+      title,
+      category: 'See',
+      city: cityName,
+      country: countryName,
+      coordinates,
+    });
+    if (params.sourceUrl) setSourceUrl(params.sourceUrl);
+    setStep('details');
+  }, [params, pickedCities, setPickedCities]);
 
   // Place autocomplete
   useEffect(() => {

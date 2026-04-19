@@ -68,6 +68,13 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen name="place/[id]" options={{ animation: 'fade' }} />
+          <Stack.Screen
+            name="imported"
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
         </Stack>
       </OnboardingGate>
     </PlacesProvider>
