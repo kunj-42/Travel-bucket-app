@@ -11,7 +11,7 @@ import { CategoryLabel } from './CategoryLabel';
 import { PlaceImage } from './PlaceImage';
 import { VisitedStamp } from './VisitedStamp';
 
-type Layout = 'hero' | 'left' | 'right';
+type Layout = 'hero' | 'left' | 'right' | 'compact';
 
 interface Props {
   place: Place;
@@ -57,6 +57,33 @@ export function PlaceCard({ place, layout, onPress }: Props) {
     ];
     Alert.alert(place.title, undefined, actions);
   };
+
+  if (layout === 'compact') {
+    return (
+      <Pressable
+        onPress={handle}
+        onLongPress={handleLongPress}
+        delayLongPress={400}
+        style={({ pressed }) => [styles.compact, pressed && styles.pressed]}
+      >
+        <View style={styles.compactImage}>
+          <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={1} />
+          {place.pinned ? <PinDot style={styles.pinCompact} /> : null}
+        </View>
+        <View style={styles.compactText}>
+          <CategoryLabel category={place.category} />
+          <Text style={[type.subtitle, styles.compactTitle]} numberOfLines={2}>
+            {place.title}
+          </Text>
+          <Text style={type.meta} numberOfLines={1}>
+            {place.city}
+            {place.country ? ` · ${place.country}` : ''}
+          </Text>
+        </View>
+        {place.visited ? <VisitedStamp size="sm" style={styles.stampCompact} /> : null}
+      </Pressable>
+    );
+  }
 
   if (layout === 'hero') {
     return (
@@ -189,6 +216,38 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     left: spacing.sm,
+  },
+  compact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    gap: spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.hairline,
+  },
+  compactImage: {
+    width: 72,
+    height: 72,
+    overflow: 'hidden',
+  },
+  compactText: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  compactTitle: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  pinCompact: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+  },
+  stampCompact: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
   },
 });
 

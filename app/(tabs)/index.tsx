@@ -17,11 +17,21 @@ import { usePlaces } from '@/lib/store';
 import { PlaceCard, layoutFor } from '@/components/PlaceCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
+import { CityFolder, AllFolder } from '@/components/CityFolder';
 import type { Place } from '@/lib/types';
 
 // Below this count, the search input is noise — a 3-place list reads faster
 // than it filters. Once the shelf grows, search earns its space.
 const SEARCH_VISIBLE_AT = 6;
+// Thresholds for the Shelf (city folders) view. Below either, we stay on the
+// flat list — folders of three items feel empty and clutter the hierarchy.
+const SHELF_MIN_CITIES = 2;
+const SHELF_MIN_PLACES = 5;
+
+type CityBucket = { name: string; country: string; places: Place[] };
+type ShelfItem =
+  | { kind: 'all'; total: number }
+  | { kind: 'city'; bucket: CityBucket };
 
 export default function Feed() {
   const { places, loading, refresh } = usePlaces();
@@ -40,32 +50,114 @@ export default function Feed() {
   const pinned = useMemo(() => places.filter((p) => p.pinned && matches(p)), [places, q]);
   const rest = useMemo(() => places.filter((p) => !p.pinned && matches(p)), [places, q]);
 
-  const data = useMemo<Array<{ place: Place; index: number }>>(
-    () => rest.map((place, index) => ({ place, index })),
-    [rest],
-  );
+  // Group the non-pinned places by city to produce the Shelf folders. Only
+  // used when the Shelf threshold is met.
+  const cityBuckets = useMemo<CityBucket[]>(() => {
+    const map = new Map<string, CityBucket>();
+    for (const p of rest) {
+      const key = p.city.toLowerCase();
+      if (!key) continue;
+      const existing = map.get(key);
+      if (existing) existing.places.push(p);
+      else map.set(key, { name: p.city, country: p.country, places: [p] });
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rest]);
+
+  const totalCities = new Set(places.map((p) => p.city.toLowerCase())).size;
+  const shelfMode =
+    totalCities >= SHELF_MIN_CITIES &&
+    places.length >= SHELF_MIN_PLACES &&
+    cityBuckets.length > 0;
 
   const searching = q.length > 0;
   const nothingMatches = searching && pinned.length === 0 && rest.length === 0;
 
+  // ------ Flat mode (below threshold OR search collapsed to 0 folders) ------
+  const flatData = useMemo<Array<{ place: Place; index: number }>>(
+    () => rest.map((place, index) => ({ place, index })),
+    [rest],
+  );
+
+  const header = (
+    <>
+      <Header
+        count={places.length}
+        query={query}
+        onQueryChange={setQuery}
+        showSearch={places.length >= SEARCH_VISIBLE_AT}
+      />
+      {pinned.length > 0 ? <UpNextSection pinned={pinned} /> : null}
+      {pinned.length > 0 && (shelfMode ? cityBuckets.length > 0 : rest.length > 0) ? (
+        <SectionDivider label={shelfMode ? 'The shelf' : 'The shelf'} />
+      ) : null}
+    </>
+  );
+
+  if (shelfMode) {
+    const shelfData: ShelfItem[] = [
+      { kind: 'all', total: places.length },
+      ...cityBuckets.map((bucket): ShelfItem => ({ kind: 'city', bucket })),
+    ];
+    return (
+      <View style={styles.wrap}>
+        <FlatList
+          data={shelfData}
+          keyExtractor={(item) =>
+            item.kind === 'all' ? 'all' : `city-${item.bucket.name}`
+          }
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
+          contentContainerStyle={{
+            paddingHorizontal: spacing.xl,
+            paddingBottom: insets.bottom + spacing.xxl,
+          }}
+          ListHeaderComponent={<View style={styles.headerBleed}>{header}</View>}
+          ListEmptyComponent={
+            nothingMatches ? (
+              <EmptyState
+                eyebrow="No match"
+                title={`Nothing for "${query.trim()}".`}
+                body="Try a shorter word, a city, or a tag."
+              />
+            ) : null
+          }
+          renderItem={({ item }) =>
+            item.kind === 'all' ? (
+              <AllFolder
+                count={places.length}
+                onPress={() => router.push('/city/__all')}
+              />
+            ) : (
+              <CityFolder
+                name={item.bucket.name}
+                country={item.bucket.country}
+                places={item.bucket.places}
+                onPress={() =>
+                  router.push({ pathname: '/city/[name]', params: { name: item.bucket.name } })
+                }
+              />
+            )
+          }
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.accent} />
+          }
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        />
+        <Fab onPress={() => router.push('/add')} bottom={insets.bottom + 88} />
+      </View>
+    );
+  }
+
+  // ------ Flat mode ------
   return (
     <View style={styles.wrap}>
       <FlatList
-        data={data}
+        data={flatData}
         keyExtractor={(item) => item.place.id}
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
-        ListHeaderComponent={
-          <>
-            <Header
-              count={places.length}
-              query={query}
-              onQueryChange={setQuery}
-              showSearch={places.length >= SEARCH_VISIBLE_AT}
-            />
-            {pinned.length > 0 ? <UpNextSection pinned={pinned} /> : null}
-            {pinned.length > 0 && rest.length > 0 ? <SectionDivider label="The shelf" /> : null}
-          </>
-        }
+        ListHeaderComponent={header}
         ListEmptyComponent={
           loading ? null : nothingMatches ? (
             <EmptyState
@@ -92,17 +184,7 @@ export default function Feed() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       />
-      <Pressable
-        accessibilityLabel="Add a place"
-        onPress={() => router.push('/add')}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: insets.bottom + 88 },
-          pressed && { opacity: 0.8 },
-        ]}
-      >
-        <Text style={styles.fabText}>＋</Text>
-      </Pressable>
+      <Fab onPress={() => router.push('/add')} bottom={insets.bottom + 88} />
     </View>
   );
 }
@@ -175,6 +257,18 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
+function Fab({ onPress, bottom }: { onPress: () => void; bottom: number }) {
+  return (
+    <Pressable
+      accessibilityLabel="Add a place"
+      onPress={onPress}
+      style={({ pressed }) => [styles.fab, { bottom }, pressed && { opacity: 0.8 }]}
+    >
+      <Text style={styles.fabText}>＋</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
@@ -184,6 +278,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
     backgroundColor: colors.background,
+  },
+  // In Shelf mode the grid needs horizontal padding on the list itself, so the
+  // header bleed-undoes that padding to keep the hero type full-width.
+  headerBleed: {
+    marginHorizontal: -spacing.xl,
   },
   subtitle: {
     marginTop: spacing.md,
@@ -222,6 +321,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: colors.hairline,
+  },
+  gridRow: {
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   fab: {
     position: 'absolute',

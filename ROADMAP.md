@@ -38,36 +38,7 @@ UX. Swap to an LLM later once we have a budget.
 
 ---
 
-### 2. The Shelf — city folders on the Feed home + dense place cards
-
-Replace the current long-scroll Feed with a **2-column grid of small city
-folders** (the magazine-folder UX). Each folder: 4:3 landscape thumbnail (small,
-not the current huge 3:4 portrait), Fraunces city name, small-caps count, 12px
-rounded corners, hairline border, no shadow. Tiny terracotta dot in the corner
-when any places in that city are visited.
-
-Pinned **"All" folder top-left** — no image, cream, serif "All," routes to the
-flat list.
-
-Tapping a folder → **filtered city view** with a **dense list** (72×72 square
-thumbnail + text column, ~100px row height) instead of the hero/row layouts
-today. Four to five places per screen.
-
-**Threshold:** 1 city or under 5 places → flat list stays. 2+ cities AND 5+
-places → Shelf home activates.
-
-**Shape:**
-- New `CityFolder` component.
-- New Shelf grid replacing `app/(tabs)/index.tsx`.
-- New `/city/[name]` route for the filtered view.
-- New `PlaceCard.compact` variant with the 72×72 thumb.
-- Threshold logic gates Shelf vs flat list.
-
-**Effort:** ~1 day, self-contained UI work. Zero API impact.
-
----
-
-### 3. Share a city list
+### 2. Share a city list
 
 A "Share Lisbon" action that packs a city's places (title, category, address,
 coords, notes, Maps link — **no photo URLs**, since those carry the user's API key)

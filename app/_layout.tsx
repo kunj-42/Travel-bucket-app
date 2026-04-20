@@ -68,6 +68,7 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen name="place/[id]" options={{ animation: 'fade' }} />
+          <Stack.Screen name="city/[name]" options={{ animation: 'fade' }} />
           <Stack.Screen
             name="imported"
             options={{
