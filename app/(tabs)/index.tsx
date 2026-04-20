@@ -28,21 +28,25 @@ export default function Feed() {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return places;
-    return places.filter((p) => {
-      const hay = `${p.title} ${p.city} ${p.country} ${p.tags.join(' ')}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [places, query]);
+  const q = query.trim().toLowerCase();
+  const matches = (p: Place) => {
+    if (!q) return true;
+    const hay = `${p.title} ${p.city} ${p.country} ${p.tags.join(' ')}`.toLowerCase();
+    return hay.includes(q);
+  };
+
+  // Pinned places live in their own "Up next" section. They're pulled off the
+  // main shelf so the list below stays the long-term bucket, not the planner.
+  const pinned = useMemo(() => places.filter((p) => p.pinned && matches(p)), [places, q]);
+  const rest = useMemo(() => places.filter((p) => !p.pinned && matches(p)), [places, q]);
 
   const data = useMemo<Array<{ place: Place; index: number }>>(
-    () => filtered.map((place, index) => ({ place, index })),
-    [filtered],
+    () => rest.map((place, index) => ({ place, index })),
+    [rest],
   );
 
-  const searching = query.trim().length > 0;
+  const searching = q.length > 0;
+  const nothingMatches = searching && pinned.length === 0 && rest.length === 0;
 
   return (
     <View style={styles.wrap}>
@@ -51,21 +55,25 @@ export default function Feed() {
         keyExtractor={(item) => item.place.id}
         contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
         ListHeaderComponent={
-          <Header
-            count={places.length}
-            query={query}
-            onQueryChange={setQuery}
-            showSearch={places.length >= SEARCH_VISIBLE_AT}
-          />
+          <>
+            <Header
+              count={places.length}
+              query={query}
+              onQueryChange={setQuery}
+              showSearch={places.length >= SEARCH_VISIBLE_AT}
+            />
+            {pinned.length > 0 ? <UpNextSection pinned={pinned} /> : null}
+            {pinned.length > 0 && rest.length > 0 ? <SectionDivider label="The shelf" /> : null}
+          </>
         }
         ListEmptyComponent={
-          loading ? null : searching ? (
+          loading ? null : nothingMatches ? (
             <EmptyState
               eyebrow="No match"
               title={`Nothing for "${query.trim()}".`}
               body="Try a shorter word, a city, or a tag."
             />
-          ) : (
+          ) : places.length === 0 ? (
             <EmptyState
               eyebrow="A quiet shelf"
               title="Nothing saved — yet."
@@ -73,7 +81,7 @@ export default function Feed() {
             >
               <Button label="Add your first place" onPress={() => router.push('/add')} />
             </EmptyState>
-          )
+          ) : null
         }
         renderItem={({ item }) => (
           <PlaceCard place={item.place} layout={layoutFor(item.index)} />
@@ -138,6 +146,35 @@ function Header({
   );
 }
 
+function UpNextSection({ pinned }: { pinned: Place[] }) {
+  return (
+    <View style={styles.upNext}>
+      <View style={styles.upNextLabel}>
+        <Text style={[type.labelSoft, { color: colors.accent }]}>
+          Up next — {pinned.length} {pinned.length === 1 ? 'place' : 'places'}
+        </Text>
+      </View>
+      {pinned.map((place, i) => (
+        <PlaceCard
+          key={place.id}
+          place={place}
+          layout={i % 2 === 0 ? 'left' : 'right'}
+        />
+      ))}
+    </View>
+  );
+}
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <View style={styles.sectionDivider}>
+      <View style={styles.sectionLine} />
+      <Text style={[type.labelSoft, { color: colors.textMuted }]}>{label}</Text>
+      <View style={styles.sectionLine} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
@@ -166,6 +203,25 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 16,
     color: colors.text,
+  },
+  upNext: {
+    paddingTop: spacing.lg,
+  },
+  upNextLabel: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+  sectionDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
+    gap: spacing.md,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.hairline,
   },
   fab: {
     position: 'absolute',

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { colors } from '@/theme/colors';
 import { type } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
 import type { Place } from '@/lib/types';
@@ -24,6 +25,7 @@ export function PlaceCard({ place, layout, onPress }: Props) {
       <Pressable onPress={handle} style={({ pressed }) => [styles.hero, pressed && styles.pressed]}>
         <View>
           <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={4 / 5} />
+          {place.pinned ? <PinDot style={styles.pinHero} /> : null}
           {place.visited ? <VisitedStamp style={styles.stampHero} /> : null}
         </View>
         <View style={styles.heroMeta}>
@@ -51,6 +53,7 @@ export function PlaceCard({ place, layout, onPress }: Props) {
     >
       <View style={styles.imageCol}>
         <PlaceImage uri={place.thumbnailUrl} category={place.category} aspectRatio={3 / 4} />
+        {place.pinned ? <PinDot style={styles.pinRow} /> : null}
         {place.visited ? <VisitedStamp size="sm" style={styles.stampRow} /> : null}
       </View>
       <View style={[styles.textCol, reverse ? styles.textColRight : styles.textColLeft]}>
@@ -64,6 +67,12 @@ export function PlaceCard({ place, layout, onPress }: Props) {
       </View>
     </Pressable>
   );
+}
+
+// A small terracotta dot marking an "Up next" pin. Deliberately quiet — reads
+// as an unread indicator on the corner of the photo, not decoration.
+function PinDot({ style }: { style?: object }) {
+  return <View style={[styles.pin, style]} />;
 }
 
 const styles = StyleSheet.create({
@@ -117,6 +126,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.sm,
     right: spacing.sm,
+  },
+  pin: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+    borderWidth: 1.5,
+    borderColor: colors.background,
+  },
+  pinHero: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+  },
+  pinRow: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
   },
 });
 

@@ -25,7 +25,7 @@ import type { Place } from '@/lib/types';
 
 export default function PlaceDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { places, remove, markVisited, updateVisitNote } = usePlaces();
+  const { places, remove, markVisited, updateVisitNote, togglePin } = usePlaces();
   const insets = useSafeAreaInsets();
   const [place, setPlace] = useState<Place | undefined>(() =>
     places.find((p) => p.id === id),
@@ -90,6 +90,16 @@ export default function PlaceDetail() {
     await markVisited(current.id, !current.visited, current.visitNote);
   };
 
+  const onTogglePin = async () => {
+    const res = await togglePin(current.id);
+    if (!res.ok && res.reason === 'max-pins-reached') {
+      Alert.alert(
+        'Up next is full',
+        'You already have 10 places pinned. Release one from Up next before pinning another.',
+      );
+    }
+  };
+
   const saveTipIfChanged = async () => {
     if (!current.visited) return;
     if ((current.visitNote ?? '') === tipDraft) return;
@@ -124,6 +134,22 @@ export default function PlaceDetail() {
       </View>
 
       <Divider style={{ marginHorizontal: spacing.xl, marginVertical: spacing.xl }} />
+
+      {!current.visited ? (
+        <View style={styles.section}>
+          <Pressable onPress={onTogglePin} hitSlop={8} style={styles.pinRow}>
+            <View style={[styles.pinDot, current.pinned && styles.pinDotActive]} />
+            <Text
+              style={[
+                type.label,
+                { color: current.pinned ? colors.accent : colors.text },
+              ]}
+            >
+              {current.pinned ? 'Pinned to Up next · tap to release' : 'Pin to Up next'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         {current.visited ? (
@@ -287,5 +313,22 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: colors.textMuted,
+  },
+  pinRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  pinDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: colors.text,
+    backgroundColor: 'transparent',
+  },
+  pinDotActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
 });

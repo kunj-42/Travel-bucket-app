@@ -37,6 +37,11 @@ export interface Place {
   visited?: boolean;
   visitedAt?: number;
   visitNote?: string;
+  // "Up next" pin — the short-list of places the user is actively planning
+  // to visit on their next trip. Capped in the store (see MAX_PINS) so this
+  // stays a curated shortlist, not another dump.
+  pinned?: boolean;
+  pinnedAt?: number;
 }
 
 export interface PickedCity {

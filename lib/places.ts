@@ -94,6 +94,31 @@ export async function setVisited(
     visited,
     visitedAt: visited ? (prev.visitedAt ?? Date.now()) : undefined,
     visitNote: visited ? (visitNote ?? prev.visitNote) : undefined,
+    // Marking visited releases the Up-next pin — the pin's job was to keep
+    // this place in the short-list, and it's now been visited.
+    pinned: visited ? false : prev.pinned,
+    pinnedAt: visited ? undefined : prev.pinnedAt,
+    updatedAt: Date.now(),
+  };
+  const copy = all.slice();
+  copy[idx] = next;
+  await savePlaces(copy);
+  return next;
+}
+
+/**
+ * Toggle the "Up next" pin. Marking a place visited elsewhere automatically
+ * releases its pin, since the pin's job is done.
+ */
+export async function setPinned(id: string, pinned: boolean): Promise<Place | undefined> {
+  const all = await loadPlaces();
+  const idx = all.findIndex((p) => p.id === id);
+  if (idx < 0) return undefined;
+  const prev = all[idx];
+  const next: Place = {
+    ...prev,
+    pinned,
+    pinnedAt: pinned ? (prev.pinnedAt ?? Date.now()) : undefined,
     updatedAt: Date.now(),
   };
   const copy = all.slice();

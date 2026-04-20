@@ -6,10 +6,13 @@ import {
   createPlace,
   deletePlace,
   listPlaces,
+  setPinned,
   setVisited,
   setVisitNote,
   type NewPlaceInput,
 } from './places';
+
+export const MAX_PINS = 10;
 import {
   clearImportedPins,
   isOnboarded,
@@ -34,6 +37,7 @@ interface StoreValue {
   remove: (id: string) => Promise<void>;
   markVisited: (id: string, visited: boolean, visitNote?: string) => Promise<void>;
   updateVisitNote: (id: string, note: string) => Promise<void>;
+  togglePin: (id: string) => Promise<{ ok: boolean; reason?: 'max-pins-reached' }>;
   setPickedCities: (cities: PickedCity[]) => Promise<void>;
   finishOnboarding: (cities: PickedCity[]) => Promise<void>;
   importPins: (pins: ParsedPin[]) => Promise<number>;
@@ -106,6 +110,30 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
     async (id: string, note: string) => {
       await setVisitNote(id, note);
       await refresh();
+    },
+    [refresh],
+  );
+
+  /**
+   * Toggle the Up-next pin for a place. When pinning, enforce the
+   * short-list cap (MAX_PINS). Caller gets a { ok, reason } back so the UI
+   * can explain the rejection to the user.
+   */
+  const togglePin = useCallback(
+    async (id: string) => {
+      const all = await listPlaces();
+      const target = all.find((p) => p.id === id);
+      if (!target) return { ok: false };
+      const nextPinned = !target.pinned;
+      if (nextPinned) {
+        const pinnedCount = all.filter((p) => p.pinned).length;
+        if (pinnedCount >= MAX_PINS) {
+          return { ok: false, reason: 'max-pins-reached' as const };
+        }
+      }
+      await setPinned(id, nextPinned);
+      await refresh();
+      return { ok: true };
     },
     [refresh],
   );
@@ -202,6 +230,7 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
       remove,
       markVisited,
       updateVisitNote,
+      togglePin,
       setPickedCities,
       finishOnboarding,
       importPins,
@@ -221,6 +250,7 @@ export function PlacesProvider({ children }: { children: React.ReactNode }) {
       remove,
       markVisited,
       updateVisitNote,
+      togglePin,
       setPickedCities,
       finishOnboarding,
       importPins,
