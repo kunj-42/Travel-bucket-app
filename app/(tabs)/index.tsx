@@ -335,6 +335,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.text,
     alignItems: 'center',
     justifyContent: 'center',
+    // Android needs elevation for a shadow; iOS uses shadow* props. Small and
+    // soft — the FAB should feel like it's just barely floating.
+    elevation: 4,
+    shadowColor: colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   fabText: {
     color: colors.background,

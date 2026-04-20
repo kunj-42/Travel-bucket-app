@@ -20,6 +20,15 @@ export const fonts = {
   sansMedium,
 };
 
+// Android leaves extra top / bottom padding inside text baselines ("font
+// padding") that throws off vertical alignment — most noticeably pushing
+// serif titles too far below their labels. Disabling it makes Android match
+// iOS metrics for the same type preset.
+const noAndroidPad: TextStyle = Platform.select({
+  android: { includeFontPadding: false, textAlignVertical: 'center' },
+  default: {},
+}) as TextStyle;
+
 export const type = {
   display: {
     fontFamily: serif,
@@ -27,6 +36,7 @@ export const type = {
     lineHeight: 40,
     letterSpacing: -0.6,
     color: colors.text,
+    ...noAndroidPad,
   } as TextStyle,
   title: {
     fontFamily: serif,
@@ -34,6 +44,7 @@ export const type = {
     lineHeight: 32,
     letterSpacing: -0.4,
     color: colors.text,
+    ...noAndroidPad,
   } as TextStyle,
   subtitle: {
     fontFamily: serif,
@@ -41,18 +52,21 @@ export const type = {
     lineHeight: 26,
     letterSpacing: -0.2,
     color: colors.text,
+    ...noAndroidPad,
   } as TextStyle,
   body: {
     fontFamily: sans,
     fontSize: 15,
     lineHeight: 23,
     color: colors.textSoft,
+    ...noAndroidPad,
   } as TextStyle,
   meta: {
     fontFamily: sans,
     fontSize: 13,
     lineHeight: 18,
     color: colors.textMuted,
+    ...noAndroidPad,
   } as TextStyle,
   label: {
     fontFamily: sansMedium,
@@ -61,6 +75,7 @@ export const type = {
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: colors.text,
+    ...noAndroidPad,
   } as TextStyle,
   labelSoft: {
     fontFamily: sansMedium,
@@ -69,5 +84,6 @@ export const type = {
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: colors.textMuted,
+    ...noAndroidPad,
   } as TextStyle,
 };

@@ -48,7 +48,11 @@ export default function RootLayout() {
 
   return (
     <PlacesProvider>
-      <StatusBar style="dark" />
+      {/* Android needs both style and an explicit backgroundColor that matches
+        * the page; without backgroundColor the bar defaults to a stark white
+        * strip at the top that fights the mint palette. translucent=false is
+        * required on Android for backgroundColor to apply. */}
+      <StatusBar style="dark" backgroundColor={colors.background} translucent={false} />
       <OnboardingGate>
         <Stack
           screenOptions={{
