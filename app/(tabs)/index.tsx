@@ -30,9 +30,9 @@ export default function Feed() {
         ListEmptyComponent={
           loading ? null : (
             <EmptyState
-              eyebrow="Empty bucket"
-              title="A quiet shelf, for now."
-              body="Add the first place you've been meaning to save. Pick a city, type the name — we handle the rest."
+              eyebrow="A quiet shelf"
+              title="Nothing saved — yet."
+              body="Paste a link, or tap the plus below. Once you've saved a place or two, this page fills in on its own."
             >
               <Button label="Add your first place" onPress={() => router.push('/add')} />
             </EmptyState>
@@ -42,7 +42,7 @@ export default function Feed() {
           <PlaceCard place={item.place} layout={layoutFor(item.index)} />
         )}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.textMuted} />
+          <RefreshControl refreshing={false} onRefresh={refresh} tintColor={colors.accent} />
         }
         showsVerticalScrollIndicator={false}
       />

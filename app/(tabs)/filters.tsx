@@ -136,9 +136,9 @@ export default function Filters() {
         }
         ListEmptyComponent={
           <EmptyState
-            eyebrow="Empty"
-            title="Nothing matches that shape."
-            body="Loosen a chip or two and try again."
+            eyebrow="No match"
+            title="Nothing fits this shape."
+            body="Try loosening a chip, or search for a word from the title or tags."
           />
         }
         renderItem={({ item }) => <ResultRow place={item} />}
