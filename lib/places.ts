@@ -119,6 +119,27 @@ export async function setVisitNote(id: string, note: string): Promise<Place | un
   return next;
 }
 
+/**
+ * Does `input` collide with any existing place? Checks the Google place ID
+ * first (strong signal of same spot), then title + city case-insensitively
+ * (catches manual adds of the same place).
+ */
+export function findDuplicate(
+  input: { title: string; city: string; googlePlaceId?: string },
+  places: Place[],
+): Place | undefined {
+  if (input.googlePlaceId) {
+    const match = places.find((p) => p.googlePlaceId === input.googlePlaceId);
+    if (match) return match;
+  }
+  const t = input.title.trim().toLowerCase();
+  const c = input.city.trim().toLowerCase();
+  if (!t || !c) return undefined;
+  return places.find(
+    (p) => p.title.toLowerCase() === t && p.city.toLowerCase() === c,
+  );
+}
+
 export function collectCities(places: Place[]): string[] {
   const set = new Set<string>();
   for (const p of places) set.add(p.city);

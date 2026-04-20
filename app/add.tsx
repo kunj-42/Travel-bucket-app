@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +22,7 @@ import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
 import { Divider } from '@/components/Divider';
 import { usePlaces } from '@/lib/store';
+import { findDuplicate } from '@/lib/places';
 import {
   autocomplete,
   autocompleteCities,
@@ -37,7 +39,7 @@ import { CATEGORIES, type Category, type PickedCity } from '@/lib/types';
 
 export default function AddPlace() {
   const insets = useSafeAreaInsets();
-  const { pickedCities, setPickedCities, add } = usePlaces();
+  const { places, pickedCities, setPickedCities, add } = usePlaces();
   const apiAvailable = hasApiKey();
 
   const [step, setStep] = useState<'city' | 'place' | 'details'>(
@@ -339,7 +341,7 @@ export default function AddPlace() {
     setStep('details');
   };
 
-  const onSave = async () => {
+  const performSave = async () => {
     if (!selected) return;
     setSaving(true);
     try {
@@ -364,6 +366,33 @@ export default function AddPlace() {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Check for a duplicate before creating. If one exists, ask the user whether
+  // to add it anyway or cancel — prevents the most common first-year
+  // annoyance (seeing 'Noma' saved twice).
+  const onSave = () => {
+    if (!selected) return;
+    const dup = findDuplicate(
+      {
+        title: selected.title,
+        city: selected.city,
+        googlePlaceId: selected.googlePlaceId,
+      },
+      places,
+    );
+    if (dup) {
+      Alert.alert(
+        'Already on your shelf',
+        `You saved "${dup.title}" in ${dup.city} already. Add it again?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Add anyway', onPress: () => void performSave() },
+        ],
+      );
+      return;
+    }
+    void performSave();
   };
 
   const onPasteFromUrl = async () => {
