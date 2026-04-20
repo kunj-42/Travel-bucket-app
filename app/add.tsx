@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { colors } from '@/theme/colors';
 import { fonts, type } from '@/theme/typography';
 import { spacing } from '@/theme/spacing';
@@ -421,9 +422,19 @@ export default function AddPlace() {
           onAddCityPick={addAndPickCity}
           apiAvailable={apiAvailable}
           pastingLink={pastingLink}
-          onBeginPasteLink={() => {
+          onBeginPasteLink={async () => {
             setPastingLink(true);
             setLinkNote(null);
+            // If the clipboard looks like a URL and the input is empty,
+            // pre-fill it so the user can go straight to "Read link".
+            if (!linkUrl.trim()) {
+              try {
+                const clip = (await Clipboard.getStringAsync()).trim();
+                if (clip && /^https?:\/\//i.test(clip)) setLinkUrl(clip);
+              } catch {
+                /* clipboard unavailable — ignore */
+              }
+            }
           }}
           onCancelPasteLink={() => {
             setPastingLink(false);
@@ -563,7 +574,7 @@ interface CityStepProps {
   onAddCityPick: (c: PickedCity) => void;
   apiAvailable: boolean;
   pastingLink: boolean;
-  onBeginPasteLink: () => void;
+  onBeginPasteLink: () => void | Promise<void>;
   onCancelPasteLink: () => void;
   linkUrl: string;
   onLinkUrlChange: (v: string) => void;
