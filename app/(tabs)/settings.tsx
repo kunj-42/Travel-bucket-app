@@ -8,6 +8,8 @@ import { spacing } from '@/theme/spacing';
 import { Divider } from '@/components/Divider';
 import { Button } from '@/components/Button';
 import { usePlaces } from '@/lib/store';
+import { hasApiKey } from '@/lib/placesApi';
+import { hasGeminiKey } from '@/lib/gemini';
 
 export default function Settings() {
   const { places, pickedCities, importedPins, reset } = usePlaces();
@@ -61,6 +63,23 @@ export default function Settings() {
       </Pressable>
 
       <View style={styles.section}>
+        <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Diagnostics</Text>
+        <Text style={[type.body, { marginBottom: spacing.lg }]}>
+          Quick check on what's wired up. If something says "not set," the app
+          will still run but that feature is off.
+        </Text>
+        <DiagRow label="Google Places" ok={hasApiKey()} />
+        <DiagRow label="Gemini (For-You)" ok={hasGeminiKey()} />
+        {!hasApiKey() ? (
+          <Text style={[type.meta, { marginTop: spacing.md }]}>
+            Google Places drives city + place autocomplete and photo loading.
+            Missing → add EXPO_PUBLIC_GOOGLE_PLACES_API_KEY in .env locally,
+            or create it as an EAS env var for builds, then rebuild.
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.section}>
         <Text style={[type.labelSoft, { marginBottom: spacing.md }]}>Coming later</Text>
         <Text style={type.body}>
           Shared buckets with friends. Real-time sync across devices. A trip planner that pulls from
@@ -84,6 +103,18 @@ function Row({ label, value }: { label: string; value: string }) {
     <View style={styles.row}>
       <Text style={type.labelSoft}>{label}</Text>
       <Text style={type.body}>{value}</Text>
+    </View>
+  );
+}
+
+function DiagRow({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <View style={styles.diagRow}>
+      <View style={[styles.diagDot, ok ? styles.diagOk : styles.diagOff]} />
+      <Text style={[type.body, { flex: 1 }]}>{label}</Text>
+      <Text style={[type.meta, { color: ok ? colors.text : colors.textMuted }]}>
+        {ok ? 'connected' : 'not set'}
+      </Text>
     </View>
   );
 }
@@ -128,5 +159,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: colors.textMuted,
     paddingLeft: spacing.md,
+  },
+  diagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  diagDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  diagOk: {
+    backgroundColor: colors.accent,
+  },
+  diagOff: {
+    backgroundColor: colors.hairline,
   },
 });
