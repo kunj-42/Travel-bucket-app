@@ -1,4 +1,6 @@
-const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? '';
+import { GEMINI_API_KEY } from './keys';
+
+const API_KEY = GEMINI_API_KEY;
 const MODEL = 'gemini-1.5-flash';
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 

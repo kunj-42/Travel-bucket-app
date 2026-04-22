@@ -1,6 +1,7 @@
 import type { Category, Coordinates } from './types';
+import { GOOGLE_PLACES_API_KEY } from './keys';
 
-const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? '';
+const API_KEY = GOOGLE_PLACES_API_KEY;
 const BASE = 'https://places.googleapis.com/v1';
 
 export function hasApiKey(): boolean {
